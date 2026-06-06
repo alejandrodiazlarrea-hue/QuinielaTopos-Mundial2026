@@ -20,7 +20,6 @@ const supa = async (path, options = {}) => {
 };
 
 const db = {
-  // Config
   getConfig: async () => {
     const rows = await supa("config?select=key,value");
     const cfg = {};
@@ -34,26 +33,20 @@ const db = {
       body: JSON.stringify({ value }),
     });
   },
-
-  // Participants
   getParticipants: async () => {
-    return await supa("participants?select=id,name,predictions&order=id.asc") || [];
+    return await supa("participants?select=id,name,predictions,password&order=id.asc") || [];
   },
   upsertParticipant: async (p) => {
     await supa("participants", {
       method: "POST",
       prefer: "resolution=merge-duplicates,return=minimal",
-      body: JSON.stringify({ id: p.id, name: p.name, predictions: p.predictions }),
+      body: JSON.stringify({ id: p.id, name: p.name, predictions: p.predictions, password: p.password || "" }),
     });
   },
-
-  // Results
   getResults: async () => {
     const rows = await supa("results?select=match_id,home_goals,away_goals") || [];
     const res = {};
-    rows.forEach(r => {
-      res[r.match_id] = { homeGoals: r.home_goals, awayGoals: r.away_goals };
-    });
+    rows.forEach(r => { res[r.match_id] = { homeGoals: r.home_goals, awayGoals: r.away_goals }; });
     return res;
   },
   upsertResult: async (matchId, homeGoals, awayGoals) => {
@@ -176,20 +169,13 @@ const DAYS_ES = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MONTHS_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 const formatDate = (s) => {
   const [y,m,d] = s.split("-").map(Number);
-  const dt = new Date(y, m-1, d);
+  const dt = new Date(y,m-1,d);
   return `${DAYS_ES[dt.getDay()]} ${d} ${MONTHS_ES[m-1]}`;
 };
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-
-const getResult = (hg, ag) => {
-  if (hg==null||ag==null) return null;
-  return hg>ag?"H":ag>hg?"A":"D";
-};
-
-const calcScore = (pred, real) => {
-  if (!pred||real.homeGoals==null||real.awayGoals==null) return null;
-  if (pred.home==null||pred.away==null) return null;
+const getResult = (hg,ag) => { if (hg==null||ag==null) return null; return hg>ag?"H":ag>hg?"A":"D"; };
+const calcScore = (pred,real) => {
+  if (!pred||real.homeGoals==null||real.awayGoals==null||pred.home==null||pred.away==null) return null;
   let pts=0;
   if (getResult(Number(pred.home),Number(pred.away))===getResult(real.homeGoals,real.awayGoals)) pts++;
   if (Number(pred.home)===real.homeGoals) pts++;
@@ -230,37 +216,97 @@ const DateHeader = ({dateStr}) => (
 );
 
 const Flash = ({msg}) => msg ? (
-  <div style={{background:"rgba(27,127,74,0.2)",border:"1px solid #1b7f4a",color:"#4ade80",borderRadius:6,padding:"3px 12px",fontSize:12,fontWeight:700}}>
-    {msg}
-  </div>
+  <div style={{background:"rgba(27,127,74,0.2)",border:"1px solid #1b7f4a",color:"#4ade80",borderRadius:6,padding:"3px 12px",fontSize:12,fontWeight:700}}>{msg}</div>
 ) : null;
+
+// ─── MODAL DE CONTRASEÑA ──────────────────────────────────────────────────────
+
+const PasswordModal = ({participant, onSuccess, onCancel, isNew}) => {
+  const [pass, setPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = () => {
+    if (isNew) {
+      if (!pass.trim()) { setError("Pon una contraseña"); return; }
+      if (pass !== confirmPass) { setError("Las contraseñas no coinciden"); return; }
+      onSuccess(pass);
+    } else {
+      if (pass === participant.password) { onSuccess(); }
+      else { setError("Contraseña incorrecta"); setPass(""); }
+    }
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}>
+      <div style={{...card,width:320,margin:0,padding:28}}>
+        <div style={{fontWeight:900,fontSize:18,marginBottom:4}}>
+          {isNew ? "Crea tu contraseña" : `Hola, ${participant.name}`}
+        </div>
+        <div style={{color:"#888",fontSize:13,marginBottom:20}}>
+          {isNew ? "Solo tú la sabrás. No se puede recuperar." : "Ingresa tu contraseña para continuar."}
+        </div>
+        <input
+          style={{...inp,marginBottom:10}}
+          type="password"
+          placeholder="Contraseña"
+          value={pass}
+          onChange={e=>setPass(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&(isNew?setConfirmPass(""):handleSubmit())}
+          autoFocus
+        />
+        {isNew && (
+          <input
+            style={{...inp,marginBottom:10}}
+            type="password"
+            placeholder="Confirmar contraseña"
+            value={confirmPass}
+            onChange={e=>setConfirmPass(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
+          />
+        )}
+        {error && <div style={{color:C.red,fontSize:12,marginBottom:10}}>{error}</div>}
+        <div style={{display:"flex",gap:8,marginTop:4}}>
+          <button style={{...btn("outline"),flex:1}} onClick={onCancel}>Cancelar</button>
+          <button style={{...btn(),flex:1}} onClick={handleSubmit}>Entrar</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ─── SCREENS ──────────────────────────────────────────────────────────────────
 
-const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,passInput,setPassInput,passError,handleNewParticipant,handleAdminLogin,handleJoinOrSelect,setScreen}) => (
+const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,passInput,setPassInput,passError,handleNewParticipant,handleAdminLogin,handleSelectParticipant,setScreen}) => (
   <div style={{maxWidth:520,margin:"0 auto",padding:"24px 16px"}}>
     <div style={{textAlign:"center",marginBottom:32}}>
       <div style={{fontSize:60,marginBottom:8}}>⚽</div>
       <h1 style={{fontSize:28,fontWeight:900,margin:0,color:"#fff"}}>Quiniela <span style={{color:C.red}}>Mundial 2026</span></h1>
       <p style={{color:"#888",marginTop:8,fontSize:14}}>48 equipos · 12 grupos · 72 partidos · 11 Jun – 27 Jun</p>
     </div>
+
     <div style={card}>
       <div style={sec}>Soy participante</div>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
-        <input style={inp} placeholder="Tu nombre" value={participantName}
+        <input style={inp} placeholder="Tu nombre (nuevo)" value={participantName}
           onChange={e=>setParticipantName(e.target.value)}
           onKeyDown={e=>e.key==="Enter"&&handleNewParticipant()} />
-        <button style={{...btn(),whiteSpace:"nowrap"}} onClick={handleNewParticipant}>Unirme</button>
+        <button style={{...btn(),whiteSpace:"nowrap"}} onClick={handleNewParticipant}>Registrarme</button>
       </div>
       {participants.length>0&&(
         <>
-          <div style={{color:"#888",fontSize:12,marginBottom:8}}>O selecciona tu nombre:</div>
+          <div style={{color:"#888",fontSize:12,marginBottom:8}}>Ya tengo cuenta — selecciona tu nombre:</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-            {participants.map(p=><button key={p.id} style={btn("outline")} onClick={()=>handleJoinOrSelect(p.id)}>{p.name}</button>)}
+            {participants.map(p=>(
+              <button key={p.id} style={btn("outline")} onClick={()=>handleSelectParticipant(p)}>
+                {p.name}
+              </button>
+            ))}
           </div>
         </>
       )}
     </div>
+
     <div style={card}>
       <div style={sec}>Acceso Administrador</div>
       {!adminAuth?(
@@ -276,16 +322,19 @@ const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,p
       {passError&&<div style={{color:C.red,fontSize:12,marginTop:6}}>Contraseña incorrecta</div>}
       {!adminAuth&&<div style={{color:"#555",fontSize:11,marginTop:6}}>Contraseña inicial: admin123</div>}
     </div>
-    <button style={{...btn("outline"),width:"100%",marginTop:4}} onClick={()=>setScreen("ranking")}>🏆 Ver Tabla General</button>
+
+    <button style={{...btn("outline"),width:"100%",marginTop:4}} onClick={()=>setScreen("ranking")}>
+      🏆 Ver Tabla General
+    </button>
   </div>
 );
 
 const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultChange,toggleJornada,newAdminPass,setNewAdminPass,handleChangePass,ranking}) => {
   const [gFilter,setGFilter] = useState("Todos");
   const [jFilter,setJFilter] = useState(0);
-  const groups = [...new Set(ALL_MATCHES.map(m=>m.group))];
-  const filtered = ALL_MATCHES.filter(m=>(gFilter==="Todos"||m.group===gFilter)&&(jFilter===0||m.jornada===jFilter));
-  const byDate = filtered.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
+  const groups=[...new Set(ALL_MATCHES.map(m=>m.group))];
+  const filtered=ALL_MATCHES.filter(m=>(gFilter==="Todos"||m.group===gFilter)&&(jFilter===0||m.jornada===jFilter));
+  const byDate=filtered.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
 
   return (
     <div style={{maxWidth:800,margin:"0 auto",padding:"20px 16px"}}>
@@ -359,7 +408,7 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
       </div>
 
       <div style={card}>
-        <div style={sec}>Cambiar Contraseña</div>
+        <div style={sec}>Cambiar Contraseña Admin</div>
         <div style={{display:"flex",gap:8}}>
           <input style={inp} type="password" placeholder="Nueva contraseña" value={newAdminPass} onChange={e=>setNewAdminPass(e.target.value)}/>
           <button style={btn()} onClick={handleChangePass}>Cambiar</button>
@@ -538,30 +587,64 @@ export default function QuinielaMundial() {
   const [currentPreds,setCurrentPreds] = useState({});
   const [savedMsg,setSavedMsg] = useState("");
 
-  // Cargar datos iniciales de Supabase
+  // Modal contraseña
+  const [modal,setModal] = useState(null); // {type: "new"|"login", participant}
+
   useEffect(()=>{
-    Promise.all([db.getConfig(), db.getParticipants(), db.getResults()])
+    Promise.all([db.getConfig(),db.getParticipants(),db.getResults()])
       .then(([cfg,parts,res])=>{
         if (cfg.open_jornadas) setOpenJornadas(cfg.open_jornadas);
         if (cfg.admin_pass) setAdminPass(cfg.admin_pass);
         setParticipants(parts);
         setResults(res);
         setLoaded(true);
-      })
-      .catch(()=>setLoaded(true));
+      }).catch(()=>setLoaded(true));
   },[]);
 
-  // Polling cada 15s para ranking en tiempo real
   useEffect(()=>{
-    const interval = setInterval(async()=>{
-      const [parts,res] = await Promise.all([db.getParticipants(), db.getResults()]);
+    const interval=setInterval(async()=>{
+      const [parts,res]=await Promise.all([db.getParticipants(),db.getResults()]);
       setParticipants(parts);
       setResults(res);
-    }, 15000);
+    },15000);
     return ()=>clearInterval(interval);
   },[]);
 
-  const flash = (msg="✅ Guardado") => {setSavedMsg(msg);setTimeout(()=>setSavedMsg(""),2500);};
+  const flash=(msg="✅ Guardado")=>{setSavedMsg(msg);setTimeout(()=>setSavedMsg(""),2500);};
+
+  const enterAsParticipant = (p) => {
+    setActiveParticipantId(p.id);
+    setCurrentPreds({...(p.predictions||{})});
+    setScreen("participant");
+  };
+
+  // Seleccionar participante existente → pide contraseña
+  const handleSelectParticipant = useCallback((p)=>{
+    setModal({type:"login", participant:p});
+  },[]);
+
+  // Registrar nuevo participante → pide crear contraseña
+  const handleNewParticipant = useCallback(()=>{
+    const name=participantName.trim();
+    if (!name) return;
+    if (participants.find(p=>p.name.toLowerCase()===name.toLowerCase())){
+      flash("⚠️ Ese nombre ya existe, selecciónalo abajo");
+      return;
+    }
+    setModal({type:"new", participant:{name}});
+  },[participantName,participants]);
+
+  // Confirmar nuevo participante con contraseña
+  const handleNewWithPassword = useCallback(async(password)=>{
+    const name=participantName.trim();
+    const np={id:Date.now(), name, predictions:{}, password};
+    await db.upsertParticipant(np);
+    const updated=[...participants,np];
+    setParticipants(updated);
+    setParticipantName("");
+    setModal(null);
+    enterAsParticipant(np);
+  },[participantName,participants]);
 
   const handleAdminLogin = useCallback(()=>{
     if (passInput===adminPass){setAdminAuth(true);setPassError(false);setScreen("admin");setPassInput("");}
@@ -573,7 +656,7 @@ export default function QuinielaMundial() {
       const r=prev[matchId]||{};
       const updated={...r,[field]:val};
       const nr={...prev,[matchId]:updated};
-      db.upsertResult(matchId, nr[matchId].homeGoals??null, nr[matchId].awayGoals??null);
+      db.upsertResult(matchId,nr[matchId].homeGoals??null,nr[matchId].awayGoals??null);
       return nr;
     });
   },[]);
@@ -581,36 +664,17 @@ export default function QuinielaMundial() {
   const toggleJornada = useCallback(async(j)=>{
     const newOJ={...openJornadas,[j]:!openJornadas[j]};
     setOpenJornadas(newOJ);
-    await db.setConfig("open_jornadas", newOJ);
+    await db.setConfig("open_jornadas",newOJ);
     flash(newOJ[j]?`✅ Jornada ${j} abierta`:`🔒 Jornada ${j} cerrada`);
   },[openJornadas]);
 
   const handleChangePass = useCallback(async()=>{
     if (!newAdminPass.trim()) return;
     setAdminPass(newAdminPass);
-    await db.setConfig("admin_pass", newAdminPass);
+    await db.setConfig("admin_pass",newAdminPass);
     setNewAdminPass("");
     flash("✅ Contraseña actualizada");
   },[newAdminPass]);
-
-  const handleJoinOrSelect = useCallback((pId)=>{
-    const p=participants.find(x=>x.id===pId);
-    if (p){setActiveParticipantId(pId);setCurrentPreds({...p.predictions});setScreen("participant");}
-  },[participants]);
-
-  const handleNewParticipant = useCallback(async()=>{
-    const name=participantName.trim();
-    if (!name) return;
-    if (participants.find(p=>p.name.toLowerCase()===name.toLowerCase())){flash("⚠️ Ese nombre ya existe");return;}
-    const np={id:Date.now(),name,predictions:{}};
-    await db.upsertParticipant(np);
-    const updated=[...participants,np];
-    setParticipants(updated);
-    setParticipantName("");
-    setActiveParticipantId(np.id);
-    setCurrentPreds({});
-    setScreen("participant");
-  },[participantName,participants]);
 
   const handlePredChange = useCallback((matchId,field,val)=>{
     setCurrentPreds(prev=>({...prev,[matchId]:{...(prev[matchId]||{}),[field]:val}}));
@@ -624,11 +688,11 @@ export default function QuinielaMundial() {
     flash("✅ Quiniela guardada");
   },[activeParticipantId,currentPreds,participants]);
 
-  const ranking = participants.map(p=>{
+  const ranking=participants.map(p=>{
     let total=0,played=0;
     ALL_MATCHES.forEach(m=>{
       const r=results[m.id];
-      const pred=p.predictions[m.id];
+      const pred=(p.predictions||{})[m.id];
       if (r&&r.homeGoals!=null&&pred){
         const pts=calcScore(pred,r);
         if (pts!==null){total+=pts;played++;}
@@ -653,6 +717,26 @@ export default function QuinielaMundial() {
 
   return (
     <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${C.bg} 0%,#0f1932 50%,${C.bg} 100%)`,fontFamily:"'Segoe UI',system-ui,sans-serif",color:"#e8e8f0"}}>
+
+      {/* Modal contraseña */}
+      {modal&&(
+        modal.type==="new"?(
+          <PasswordModal
+            participant={modal.participant}
+            isNew={true}
+            onSuccess={handleNewWithPassword}
+            onCancel={()=>setModal(null)}
+          />
+        ):(
+          <PasswordModal
+            participant={modal.participant}
+            isNew={false}
+            onSuccess={()=>{setModal(null);enterAsParticipant(modal.participant);}}
+            onCancel={()=>setModal(null)}
+          />
+        )
+      )}
+
       <div style={{background:"linear-gradient(90deg,#0f1932,#1a0a2e)",borderBottom:`2px solid ${C.red}`,padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
         <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>⚽ <span style={{color:C.red}}>QUINIELA</span> 2026</div>
         <nav style={{display:"flex",gap:6,flexWrap:"wrap"}}>
@@ -663,7 +747,7 @@ export default function QuinielaMundial() {
         </nav>
       </div>
 
-      {screen==="home"&&<HomeScreen participants={participants} adminAuth={adminAuth} participantName={participantName} setParticipantName={setParticipantName} passInput={passInput} setPassInput={setPassInput} passError={passError} handleNewParticipant={handleNewParticipant} handleAdminLogin={handleAdminLogin} handleJoinOrSelect={handleJoinOrSelect} setScreen={setScreen}/>}
+      {screen==="home"&&<HomeScreen participants={participants} adminAuth={adminAuth} participantName={participantName} setParticipantName={setParticipantName} passInput={passInput} setPassInput={setPassInput} passError={passError} handleNewParticipant={handleNewParticipant} handleAdminLogin={handleAdminLogin} handleSelectParticipant={handleSelectParticipant} setScreen={setScreen}/>}
       {screen==="admin"&&<AdminScreen participants={participants} results={results} openJornadas={openJornadas} savedMsg={savedMsg} handleResultChange={handleResultChange} toggleJornada={toggleJornada} newAdminPass={newAdminPass} setNewAdminPass={setNewAdminPass} handleChangePass={handleChangePass} ranking={ranking}/>}
       {screen==="participant"&&<ParticipantScreen activeParticipant={activeParticipant} openJornadas={openJornadas} results={results} currentPreds={currentPreds} handlePredChange={handlePredChange} savePredictions={savePredictions} savedMsg={savedMsg} ranking={ranking} activeParticipantId={activeParticipantId}/>}
       {screen==="ranking"&&<RankingScreen ranking={ranking} results={results} participants={participants} openJornadas={openJornadas}/>}
