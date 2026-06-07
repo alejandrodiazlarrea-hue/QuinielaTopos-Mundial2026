@@ -179,6 +179,32 @@ const formatDate = (s) => {
   return `${DAYS_ES[dt.getDay()]} ${d} ${MONTHS_ES[m-1]}`;
 };
 
+// Cierre de cada jornada (hora CDMX = UTC-6)
+const JORNADA_CLOSE = {
+  1: new Date("2026-06-11T13:00:00-06:00"), // antes del primer partido J1
+  2: new Date("2026-06-18T10:00:00-06:00"), // antes del primer partido J2
+  3: new Date("2026-06-24T13:00:00-06:00"), // antes del primer partido J3
+};
+
+const useCountdown = (target) => {
+  const [timeLeft, setTimeLeft] = useState("");
+  useEffect(() => {
+    const calc = () => {
+      const diff = target - Date.now();
+      if (diff <= 0) { setTimeLeft(""); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(d > 0 ? `${d}d ${h}h ${m}m` : `${h}h ${m}m ${s}s`);
+    };
+    calc();
+    const t = setInterval(calc, 1000);
+    return () => clearInterval(t);
+  }, [target]);
+  return timeLeft;
+};
+
 const getResult = (hg,ag) => { if (hg==null||ag==null) return null; return hg>ag?"H":ag>hg?"A":"D"; };
 const calcScore = (pred,real) => {
   if (!pred||real.homeGoals==null||real.awayGoals==null||pred.home==null||pred.away==null) return null;
@@ -283,13 +309,34 @@ const PasswordModal = ({participant, onSuccess, onCancel, isNew}) => {
 
 // ─── SCREENS ──────────────────────────────────────────────────────────────────
 
-const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,passInput,setPassInput,passError,handleNewParticipant,handleAdminLogin,handleSelectParticipant,setScreen}) => (
+const CountdownBanner = ({openJornadas}) => {
+  const nextJ = [1,2,3].find(j => openJornadas[j]);
+  const timeLeft1 = useCountdown(JORNADA_CLOSE[1]);
+  const timeLeft2 = useCountdown(JORNADA_CLOSE[2]);
+  const timeLeft3 = useCountdown(JORNADA_CLOSE[3]);
+  const timers = {1:timeLeft1, 2:timeLeft2, 3:timeLeft3};
+
+  if (!nextJ) return null;
+  const t = timers[nextJ];
+  if (!t) return null;
+
+  return (
+    <div style={{background:"rgba(233,69,96,0.1)",border:`1px solid ${C.red}`,borderRadius:10,padding:"10px 16px",marginBottom:16,textAlign:"center"}}>
+      <div style={{fontSize:12,color:"#888",marginBottom:2}}>⏱️ Jornada {nextJ} cierra en</div>
+      <div style={{fontSize:22,fontWeight:900,color:C.red,fontVariantNumeric:"tabular-nums"}}>{t}</div>
+      <div style={{fontSize:11,color:"#666",marginTop:2}}>Registra tus pronósticos antes de que cierre</div>
+    </div>
+  );
+};
+
+const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,passInput,setPassInput,passError,handleNewParticipant,handleAdminLogin,handleSelectParticipant,setScreen,openJornadas}) => (
   <div style={{maxWidth:520,margin:"0 auto",padding:"24px 16px"}}>
     <div style={{textAlign:"center",marginBottom:32}}>
       <div style={{fontSize:60,marginBottom:8}}>⚽</div>
       <h1 style={{fontSize:28,fontWeight:900,margin:0,color:"#fff"}}>Quiniela <span style={{color:C.red}}>Mundial 2026</span></h1>
       <p style={{color:"#888",marginTop:8,fontSize:14}}>48 equipos · 12 grupos · 72 partidos · 11 Jun – 27 Jun</p>
     </div>
+    <CountdownBanner openJornadas={openJornadas}/>
 
     <div style={card}>
       <div style={sec}>Soy participante</div>
@@ -331,6 +378,9 @@ const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,p
 
     <button style={{...btn("outline"),width:"100%",marginTop:4}} onClick={()=>setScreen("ranking")}>
       🏆 Ver Tabla General
+    </button>
+    <button style={{...btn("outline"),width:"100%",marginTop:8}} onClick={()=>setScreen("pronosticos")}>
+      📋 Ver Pronósticos de Todos
     </button>
   </div>
 );
@@ -543,6 +593,115 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
   );
 };
 
+
+const PronosticosScreen = ({participants, results, openJornadas}) => {
+  const [jFilter, setJFilter] = useState(1);
+  const [gFilter, setGFilter] = useState("Todos");
+
+  // Solo mostrar jornadas cerradas
+  const closedJs = [1,2,3].filter(j => !openJornadas[j]);
+  const groups = [...new Set(ALL_MATCHES.map(m => m.group))];
+
+  const jMatches = ALL_MATCHES.filter(m =>
+    m.jornada === jFilter &&
+    (gFilter === "Todos" || m.group === gFilter)
+  );
+
+  const byDate = jMatches.reduce((acc,m) => {
+    if (!acc[m.date]) acc[m.date] = [];
+    acc[m.date].push(m);
+    return acc;
+  }, {});
+
+  if (closedJs.length === 0) return (
+    <div style={{maxWidth:600, margin:"0 auto", padding:"24px 16px"}}>
+      <div style={{fontSize:22, fontWeight:900, marginBottom:20}}>
+        📋 Pronósticos <span style={{color:C.red}}>de Todos</span>
+      </div>
+      <div style={{...card, textAlign:"center", padding:40}}>
+        <div style={{fontSize:40, marginBottom:12}}>🔒</div>
+        <div style={{color:"#888"}}>Los pronósticos se revelan cuando la jornada está cerrada.</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{maxWidth:760, margin:"0 auto", padding:"20px 16px"}}>
+      <div style={{fontSize:22, fontWeight:900, marginBottom:4}}>
+        📋 Pronósticos <span style={{color:C.red}}>de Todos</span>
+      </div>
+      <div style={{fontSize:12, color:"#888", marginBottom:16}}>Solo visible cuando la jornada está cerrada</div>
+
+      <div style={{display:"flex", gap:8, marginBottom:16, flexWrap:"wrap"}}>
+        {closedJs.map(j => (
+          <button key={j} style={{
+            ...btn(jFilter===j?"primary":"outline"),
+            padding:"8px 16px", fontSize:13
+          }} onClick={() => setJFilter(j)}>
+            Jornada {j}
+          </button>
+        ))}
+        <select style={{...inp, width:"auto"}} value={gFilter} onChange={e=>setGFilter(e.target.value)}>
+          <option value="Todos">Todos los grupos</option>
+          {groups.map(g => <option key={g} value={g}>Grupo {g}</option>)}
+        </select>
+      </div>
+
+      {!closedJs.includes(jFilter) ? (
+        <div style={{...card, textAlign:"center", padding:30}}>
+          <div style={{color:"#888"}}>Esta jornada aún está abierta.</div>
+        </div>
+      ) : Object.entries(byDate).map(([date, matches]) => (
+        <div key={date}>
+          <DateHeader dateStr={date}/>
+          {matches.map(m => {
+            const r = results[m.id] || {};
+            const hasResult = r.homeGoals != null && r.awayGoals != null;
+            return (
+              <div key={m.id} style={{...card, padding:"12px 16px", marginBottom:8}}>
+                {/* Partido header */}
+                <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:10, flexWrap:"wrap"}}>
+                  <span style={pill("#0f2d6e")}>G{m.group}</span>
+                  <span style={{fontSize:12, color:"#666"}}>{m.time}</span>
+                  <span style={{flex:1, textAlign:"center", fontWeight:700, fontSize:14}}>
+                    {FLAGS[m.home]||"🏳️"} {ABBR[m.home]} {hasResult ? `${r.homeGoals} - ${r.awayGoals}` : "vs"} {ABBR[m.away]} {FLAGS[m.away]||"🏳️"}
+                  </span>
+                  {hasResult && <span style={{...pill("#1b7f4a"), fontSize:11}}>Resultado final</span>}
+                </div>
+                {/* Pronósticos de cada participante */}
+                <div style={{display:"flex", flexWrap:"wrap", gap:6}}>
+                  {participants.map(p => {
+                    const pred = (p.predictions || {})[m.id];
+                    const pts = hasResult && pred ? calcScore(pred, r) : null;
+                    const hasPred = pred && pred.home != null && pred.away != null;
+                    return (
+                      <div key={p.id} style={{
+                        background: pts===3?"rgba(27,127,74,0.2)": pts===0&&hasResult?"rgba(127,27,27,0.2)":"rgba(255,255,255,0.05)",
+                        border: `1px solid ${pts===3?"#1b7f4a": pts===0&&hasResult?"#7f1b1b":"#333"}`,
+                        borderRadius:8, padding:"6px 10px", minWidth:80, textAlign:"center"
+                      }}>
+                        <div style={{fontSize:11, color:"#888", marginBottom:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:80}}>{p.name}</div>
+                        <div style={{fontWeight:700, fontSize:14}}>
+                          {hasPred ? `${pred.home}-${pred.away}` : <span style={{color:"#555"}}>—</span>}
+                        </div>
+                        {pts !== null && (
+                          <div style={{fontSize:10, color: pts===3?"#4ade80": pts===0?"#f87171":"#fbbf24", fontWeight:700, marginTop:2}}>
+                            {pts}pt{pts!==1?"s":""}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const RankingScreen = ({ranking,results,participants,openJornadas}) => {
   const medals=["🥇","🥈","🥉"];
   const maxPts=ranking[0]?.total||1;
@@ -557,21 +716,40 @@ const RankingScreen = ({ranking,results,participants,openJornadas}) => {
           <div style={{color:"#888"}}>Aún no hay participantes ni resultados.</div>
         </div>
       ):ranking.map((p,i)=>(
-        <div key={p.id} style={{...card,display:"flex",alignItems:"center",gap:14,padding:"14px 18px",
+        <div key={p.id} style={{...card,padding:"14px 18px",
           background:i===0?"rgba(233,69,96,0.08)":C.card,
           border:`1px solid ${i===0?"rgba(233,69,96,0.4)":C.border}`}}>
-          <div style={{fontSize:i<3?26:18,fontWeight:900,minWidth:36,textAlign:"center",color:i>=3?"#555":undefined}}>
-            {i<3?medals[i]:`#${i+1}`}
-          </div>
-          <div style={{flex:1}}>
-            <div style={{fontWeight:700,fontSize:16}}>{p.name}</div>
-            <div style={{marginTop:6,background:"rgba(255,255,255,0.06)",borderRadius:4,height:6,overflow:"hidden"}}>
-              <div style={{height:"100%",width:`${Math.round((p.total/maxPts)*100)}%`,background:i===0?C.red:C.blue,borderRadius:4}}/>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <div style={{fontSize:i<3?26:18,fontWeight:900,minWidth:36,textAlign:"center",color:i>=3?"#555":undefined}}>
+              {i<3?medals[i]:`#${i+1}`}
             </div>
-            <div style={{fontSize:11,color:"#666",marginTop:4}}>{p.played} partidos con pronóstico</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:16}}>{p.name}</div>
+              <div style={{marginTop:6,background:"rgba(255,255,255,0.06)",borderRadius:4,height:6,overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${Math.round((p.total/maxPts)*100)}%`,background:i===0?C.red:C.blue,borderRadius:4}}/>
+              </div>
+            </div>
+            <div style={{fontSize:28,fontWeight:900,color:i===0?C.red:"#e8e8f0"}}>
+              {p.total}<span style={{fontSize:12,color:"#888",fontWeight:400}}> pts</span>
+            </div>
           </div>
-          <div style={{fontSize:28,fontWeight:900,color:i===0?C.red:"#e8e8f0"}}>
-            {p.total}<span style={{fontSize:12,color:"#888",fontWeight:400}}> pts</span>
+          {/* Desglose por jornada */}
+          <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
+            {[1,2,3].map(j => {
+              const jPts = ALL_MATCHES.filter(m=>m.jornada===j).reduce((acc,m)=>{
+                const r=results[m.id]; const pred=(p.predictions||{})[m.id];
+                if(r&&r.homeGoals!=null&&pred){const pts=calcScore(pred,r);if(pts!=null)acc+=pts;}
+                return acc;
+              },0);
+              const jPlayed = ALL_MATCHES.filter(m=>m.jornada===j&&results[m.id]?.homeGoals!=null&&(p.predictions||{})[m.id]).length;
+              return (
+                <div key={j} style={{background:"rgba(255,255,255,0.05)",borderRadius:6,padding:"4px 10px",textAlign:"center",minWidth:70}}>
+                  <div style={{fontSize:10,color:"#666",fontWeight:700}}>J{j}</div>
+                  <div style={{fontSize:15,fontWeight:800,color:jPlayed>0?C.red:"#444"}}>{jPts}</div>
+                  <div style={{fontSize:9,color:"#555"}}>{jPlayed} partidos</div>
+                </div>
+              );
+            })}
           </div>
         </div>
       ))}
@@ -775,13 +953,16 @@ export default function QuinielaMundial() {
           {activeParticipant&&<button style={navBtn(screen==="participant")} onClick={()=>setScreen("participant")}>Mi Quiniela</button>}
           {adminAuth&&<button style={navBtn(screen==="admin")} onClick={()=>setScreen("admin")}>Admin</button>}
           <button style={navBtn(screen==="ranking")} onClick={()=>setScreen("ranking")}>Ranking</button>
+          <button style={navBtn(screen==="pronosticos")} onClick={()=>setScreen("pronosticos")}>Pronósticos</button>
         </nav>
       </div>
 
-      {screen==="home"&&<HomeScreen participants={participants} adminAuth={adminAuth} participantName={participantName} setParticipantName={setParticipantName} passInput={passInput} setPassInput={setPassInput} passError={passError} handleNewParticipant={handleNewParticipant} handleAdminLogin={handleAdminLogin} handleSelectParticipant={handleSelectParticipant} setScreen={setScreen}/>}
+      {screen==="home"&&<HomeScreen participants={participants} adminAuth={adminAuth} participantName={participantName} setParticipantName={setParticipantName} passInput={passInput} setPassInput={setPassInput} passError={passError} handleNewParticipant={handleNewParticipant} handleAdminLogin={handleAdminLogin} handleSelectParticipant={handleSelectParticipant} setScreen={setScreen} openJornadas={openJornadas}/>}
       {screen==="admin"&&<AdminScreen participants={participants} results={results} openJornadas={openJornadas} savedMsg={savedMsg} handleResultChange={handleResultChange} toggleJornada={toggleJornada} newAdminPass={newAdminPass} setNewAdminPass={setNewAdminPass} handleChangePass={handleChangePass} ranking={ranking} handleDeleteParticipant={handleDeleteParticipant}/>}
       {screen==="participant"&&<ParticipantScreen activeParticipant={activeParticipant} openJornadas={openJornadas} results={results} currentPreds={currentPreds} handlePredChange={handlePredChange} savePredictions={savePredictions} savedMsg={savedMsg} ranking={ranking} activeParticipantId={activeParticipantId}/>}
-      {screen==="ranking"&&<RankingScreen ranking={ranking} results={results} participants={participants} openJornadas={openJornadas}/>}
+      {screen==="ranking"&&<RankingScreen ranking={ranking} results={results} participants={participants} openJornadas={openJornadas}/> }
+      {screen==="pronosticos"&&<PronosticosScreen participants={participants} results={results} openJornadas={openJornadas}/>}
     </div>
   );
 }
+
