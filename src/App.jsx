@@ -56,6 +56,12 @@ const db = {
       body: JSON.stringify({ match_id: matchId, home_goals: homeGoals, away_goals: awayGoals }),
     });
   },
+  deleteParticipant: async (id) => {
+    await supa(`participants?id=eq.${id}`, {
+      method: "DELETE",
+      prefer: "return=minimal",
+    });
+  },
 };
 
 // ─── CALENDARIO OFICIAL FIFA 2026 ─────────────────────────────────────────────
@@ -329,9 +335,10 @@ const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,p
   </div>
 );
 
-const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultChange,toggleJornada,newAdminPass,setNewAdminPass,handleChangePass,ranking}) => {
+const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultChange,toggleJornada,newAdminPass,setNewAdminPass,handleChangePass,ranking,handleDeleteParticipant}) => {
   const [gFilter,setGFilter] = useState("Todos");
   const [jFilter,setJFilter] = useState(0);
+  const [confirmDelete,setConfirmDelete] = useState(null); // participant id
   const groups=[...new Set(ALL_MATCHES.map(m=>m.group))];
   const filtered=ALL_MATCHES.filter(m=>(gFilter==="Todos"||m.group===gFilter)&&(jFilter===0||m.jornada===jFilter));
   const byDate=filtered.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
@@ -422,9 +429,27 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
           :participants.map(p=>{
             const pr=ranking.find(r=>r.id===p.id);
             return (
-              <div key={p.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
-                <span style={{fontWeight:600}}>{p.name}</span>
-                <span style={{color:C.red,fontWeight:700}}>{pr?.total??0} pts</span>
+              <div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.05)",gap:8}}>
+                <span style={{fontWeight:600,flex:1}}>{p.name}</span>
+                <span style={{color:C.red,fontWeight:700,minWidth:50,textAlign:"right"}}>{pr?.total??0} pts</span>
+                {confirmDelete===p.id?(
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <span style={{fontSize:12,color:"#f87171"}}>¿Eliminar?</span>
+                    <button onClick={()=>{handleDeleteParticipant(p.id);setConfirmDelete(null);}}
+                      style={{background:"#7f1b1b",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>
+                      Sí
+                    </button>
+                    <button onClick={()=>setConfirmDelete(null)}
+                      style={{background:"#333",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>
+                      No
+                    </button>
+                  </div>
+                ):(
+                  <button onClick={()=>setConfirmDelete(p.id)}
+                    style={{background:"transparent",border:"1px solid #444",color:"#888",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>
+                    🗑️
+                  </button>
+                )}
               </div>
             );
           })
@@ -680,6 +705,12 @@ export default function QuinielaMundial() {
     setCurrentPreds(prev=>({...prev,[matchId]:{...(prev[matchId]||{}),[field]:val}}));
   },[]);
 
+  const handleDeleteParticipant = useCallback(async(id)=>{
+    await db.deleteParticipant(id);
+    setParticipants(prev=>prev.filter(p=>p.id!==id));
+    flash("🗑️ Participante eliminado");
+  },[]);
+
   const savePredictions = useCallback(async()=>{
     const updated=participants.map(p=>p.id===activeParticipantId?{...p,predictions:{...currentPreds}}:p);
     setParticipants(updated);
@@ -748,7 +779,7 @@ export default function QuinielaMundial() {
       </div>
 
       {screen==="home"&&<HomeScreen participants={participants} adminAuth={adminAuth} participantName={participantName} setParticipantName={setParticipantName} passInput={passInput} setPassInput={setPassInput} passError={passError} handleNewParticipant={handleNewParticipant} handleAdminLogin={handleAdminLogin} handleSelectParticipant={handleSelectParticipant} setScreen={setScreen}/>}
-      {screen==="admin"&&<AdminScreen participants={participants} results={results} openJornadas={openJornadas} savedMsg={savedMsg} handleResultChange={handleResultChange} toggleJornada={toggleJornada} newAdminPass={newAdminPass} setNewAdminPass={setNewAdminPass} handleChangePass={handleChangePass} ranking={ranking}/>}
+      {screen==="admin"&&<AdminScreen participants={participants} results={results} openJornadas={openJornadas} savedMsg={savedMsg} handleResultChange={handleResultChange} toggleJornada={toggleJornada} newAdminPass={newAdminPass} setNewAdminPass={setNewAdminPass} handleChangePass={handleChangePass} ranking={ranking} handleDeleteParticipant={handleDeleteParticipant}/>}
       {screen==="participant"&&<ParticipantScreen activeParticipant={activeParticipant} openJornadas={openJornadas} results={results} currentPreds={currentPreds} handlePredChange={handlePredChange} savePredictions={savePredictions} savedMsg={savedMsg} ranking={ranking} activeParticipantId={activeParticipantId}/>}
       {screen==="ranking"&&<RankingScreen ranking={ranking} results={results} participants={participants} openJornadas={openJornadas}/>}
     </div>
