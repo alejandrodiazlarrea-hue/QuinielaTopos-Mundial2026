@@ -598,8 +598,7 @@ const PronosticosScreen = ({participants, results, openJornadas}) => {
   const [jFilter, setJFilter] = useState(1);
   const [gFilter, setGFilter] = useState("Todos");
 
-  // Solo mostrar jornadas cerradas
-  const closedJs = [1,2,3].filter(j => !openJornadas[j]);
+  const closedJs = [1,2,3]; // Todas las jornadas visibles siempre
   const groups = [...new Set(ALL_MATCHES.map(m => m.group))];
 
   const jMatches = ALL_MATCHES.filter(m =>
@@ -613,24 +612,14 @@ const PronosticosScreen = ({participants, results, openJornadas}) => {
     return acc;
   }, {});
 
-  if (closedJs.length === 0) return (
-    <div style={{maxWidth:600, margin:"0 auto", padding:"24px 16px"}}>
-      <div style={{fontSize:22, fontWeight:900, marginBottom:20}}>
-        📋 Pronósticos <span style={{color:C.red}}>de Todos</span>
-      </div>
-      <div style={{...card, textAlign:"center", padding:40}}>
-        <div style={{fontSize:40, marginBottom:12}}>🔒</div>
-        <div style={{color:"#888"}}>Los pronósticos se revelan cuando la jornada está cerrada.</div>
-      </div>
-    </div>
-  );
+
 
   return (
     <div style={{maxWidth:760, margin:"0 auto", padding:"20px 16px"}}>
       <div style={{fontSize:22, fontWeight:900, marginBottom:4}}>
         📋 Pronósticos <span style={{color:C.red}}>de Todos</span>
       </div>
-      <div style={{fontSize:12, color:"#888", marginBottom:16}}>Solo visible cuando la jornada está cerrada</div>
+      <div style={{fontSize:12, color:"#888", marginBottom:16}}>Pronósticos de todos los participantes</div>
 
       <div style={{display:"flex", gap:8, marginBottom:16, flexWrap:"wrap"}}>
         {closedJs.map(j => (
@@ -647,11 +636,7 @@ const PronosticosScreen = ({participants, results, openJornadas}) => {
         </select>
       </div>
 
-      {!closedJs.includes(jFilter) ? (
-        <div style={{...card, textAlign:"center", padding:30}}>
-          <div style={{color:"#888"}}>Esta jornada aún está abierta.</div>
-        </div>
-      ) : Object.entries(byDate).map(([date, matches]) => (
+      {Object.entries(byDate).map(([date, matches]) => (
         <div key={date}>
           <DateHeader dateStr={date}/>
           {matches.map(m => {
@@ -965,4 +950,3 @@ export default function QuinielaMundial() {
     </div>
   );
 }
-
