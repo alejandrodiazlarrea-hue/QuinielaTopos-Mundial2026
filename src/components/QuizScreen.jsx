@@ -43,6 +43,7 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
   const [completedLabels, setCompletedLabels] = useState([]);
   const [loading, setLoading] = useState(true);
   const timerRef = useRef(null);
+  const activeLabelRef = useRef(null);
 
   useEffect(() => {
     if (!participant) { setLoading(false); return; }
@@ -116,8 +117,9 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
       if (answers.every(a => a.isCorrect)) coins += 20;
       setResults({ answers, coins, correct: answers.filter(a => a.isCorrect).length });
       setPhase("done");
-      onSaveAnswers(answers, coins, activeLabel);
-      setCompletedLabels(prev => [...prev, activeLabel]);
+      const label = activeLabelRef.current;
+      onSaveAnswers(answers, coins, label);
+      setCompletedLabels(prev => [...prev, label]);
       return finalSel;
     });
   };
@@ -127,6 +129,7 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
     const qs = getDailyQuestions(label);
     setQuestions(qs);
     setActiveLabel(label);
+    activeLabelRef.current = label;
     setCurrentQ(0);
     setSelected({});
     setTimeLeft(TIMER_SECONDS);
