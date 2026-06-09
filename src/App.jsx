@@ -819,7 +819,6 @@ export default function QuinielaMundial() {
           {activeParticipant&&<button style={navBtn(screen==="participant")} onClick={()=>setScreen("participant")}>Mi Quiniela</button>}
           {activeParticipant&&<button style={navBtn(screen==="perfil")} onClick={()=>setScreen("perfil")}>👤 Perfil</button>}
           <button style={navBtn(screen==="ranking")} onClick={()=>setScreen("ranking")}>🏆 Ranking</button>
-          <button style={navBtn(screen==="stats")} onClick={()=>setScreen("stats")}>📊 Stats</button>
           <button style={navBtn(screen==="pronosticos")} onClick={()=>setScreen("pronosticos")}>📋 Pronósticos</button>
           <button style={navBtn(screen==="badges")} onClick={()=>setScreen("badges")}>🏅 Badges</button>
           <button style={navBtn(screen==="mundial")} onClick={()=>setScreen("mundial")}>🌎 Mundial</button>
