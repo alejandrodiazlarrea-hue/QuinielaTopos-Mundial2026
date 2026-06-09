@@ -103,16 +103,24 @@ export const db = {
   },
 
   // Quiz
-  getQuizQuestions: async () => {
-    return await supa("quiz_questions?select=id,category,difficulty,question,options,correct_index") || [];
+  getQuizOpenDates: async () => {
+    const rows = await supa("config?key=eq.quiz_open_dates&select=value");
+    return (rows && rows[0]) ? (rows[0].value || []) : [];
   },
-  getQuizAnswers: async (participantId, date) => {
-    return await supa(`quiz_answers?participant_id=eq.${participantId}&quiz_date=eq.${date}&select=question_id,selected_index,is_correct,coins_earned`) || [];
+  setQuizOpenDates: async (dates) => {
+    await supa("config?key=eq.quiz_open_dates", {
+      method: "PATCH", prefer: "return=minimal",
+      body: JSON.stringify({ value: dates }),
+    });
   },
-  getAllQuizAnswers: async (date) => {
-    return await supa(`quiz_answers?quiz_date=eq.${date}&select=participant_id,question_id,selected_index,is_correct,coins_earned`) || [];
+  getQuizAnswersByParticipant: async (participantId) => {
+    return await supa(`quiz_answers?participant_id=eq.${participantId}&select=quiz_date,question_id,selected_index,is_correct,coins_earned,quiz_label`) || [];
   },
-  insertQuizAnswer: async (participantId, questionId, date, selectedIndex, isCorrect, coinsEarned) => {
+  hasCompletedQuiz: async (participantId, label) => {
+    const rows = await supa(`quiz_answers?participant_id=eq.${participantId}&quiz_label=eq.${label}&select=id`) || [];
+    return rows.length > 0;
+  },
+  insertQuizAnswer: async (participantId, questionId, date, selectedIndex, isCorrect, coinsEarned, label) => {
     await supa("quiz_answers", {
       method: "POST",
       prefer: "return=minimal",
@@ -123,7 +131,14 @@ export const db = {
         selected_index: selectedIndex,
         is_correct: isCorrect,
         coins_earned: coinsEarned,
+        quiz_label: label || date,
       }),
+    });
+  },
+  updateParticipantName: async (id, newName) => {
+    await supa(`participants?id=eq.${id}`, {
+      method: "PATCH", prefer: "return=minimal",
+      body: JSON.stringify({ name: newName }),
     });
   },
 };
