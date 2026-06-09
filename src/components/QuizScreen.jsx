@@ -29,7 +29,7 @@ const getDailyQuestions = (label) => {
   ].map((q, i) => ({ ...q, idx: i }));
 };
 
-const TIMER_SECONDS = 30;
+const TIMER_SECONDS = 15;
 
 export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
   const today = getTodayDate();
@@ -54,67 +54,76 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
     });
   }, [participant]);
 
-  // Timer
+  // Timer — resets cleanly per question
   useEffect(() => {
     if (phase !== "playing") return;
     setTimeLeft(TIMER_SECONDS);
-    timerRef.current = setInterval(() => {
+    const interval = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
-          // Time's up — auto advance
-          handleTimeUp();
-          return TIMER_SECONDS;
+          clearInterval(interval);
+          // time's up: mark as -1 and move on
+          setSelected(sel => {
+            const updated = sel[currentQ] === undefined ? { ...sel, [currentQ]: -1 } : sel;
+            setTimeout(() => {
+              setCurrentQ(q => {
+                const next = q + 1;
+                if (next < questions.length) return next;
+                // last question — finish
+                setTimeout(() => setPhase("finishing"), 50);
+                return q;
+              });
+            }, 800);
+            return updated;
+          });
+          return 0;
         }
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(timerRef.current);
-  }, [phase, currentQ]);
+    timerRef.current = interval;
+    return () => clearInterval(interval);
+  }, [phase, currentQ]); // eslint-disable-line
 
-  const handleTimeUp = () => {
-    clearInterval(timerRef.current);
-    // Mark as no answer if nothing selected
-    setSelected(prev => {
-      if (prev[currentQ] === undefined) {
-        return { ...prev, [currentQ]: -1 }; // -1 = timed out
-      }
-      return prev;
-    });
-    setTimeout(() => advanceQuestion(), 800);
-  };
+  // Trigger finish when phase = finishing
+  useEffect(() => {
+    if (phase === "finishing") finishQuiz();
+  }, [phase]); // eslint-disable-line
 
   const handleSelect = (optIdx) => {
     if (selected[currentQ] !== undefined) return;
     clearInterval(timerRef.current);
     setSelected(prev => ({ ...prev, [currentQ]: optIdx }));
-    setTimeout(() => advanceQuestion(), 1200);
+    setTimeout(() => {
+      setCurrentQ(q => {
+        const next = q + 1;
+        if (next < questions.length) return next;
+        setTimeout(() => setPhase("finishing"), 50);
+        return q;
+      });
+    }, 1000);
   };
 
-  const advanceQuestion = () => {
-    if (currentQ < questions.length - 1) {
-      setCurrentQ(prev => prev + 1);
-      setTimeLeft(TIMER_SECONDS);
-    } else {
-      finishQuiz();
-    }
-  };
-
-  const finishQuiz = async () => {
+  const finishQuiz = () => {
     clearInterval(timerRef.current);
-    setPhase("done");
-    const answers = questions.map((q, i) => {
-      const sel = selected[i] ?? -1;
-      const isCorrect = sel === q.correct_index;
-      return { questionId: q.idx, selectedIndex: sel, isCorrect, coinsEarned: isCorrect ? 10 : 0 };
+    setSelected(finalSel => {
+      const answers = questions.map((q, i) => {
+        const sel = finalSel[i] ?? -1;
+        const isCorrect = sel === q.correct_index;
+        return { questionId: q.idx, selectedIndex: sel, isCorrect, coinsEarned: isCorrect ? 10 : 0 };
+      });
+      let coins = answers.reduce((sum, a) => sum + a.coinsEarned, 0);
+      if (answers.every(a => a.isCorrect)) coins += 20;
+      setResults({ answers, coins, correct: answers.filter(a => a.isCorrect).length });
+      setPhase("done");
+      onSaveAnswers(answers, coins, activeLabel);
+      setCompletedLabels(prev => [...prev, activeLabel]);
+      return finalSel;
     });
-    let coins = answers.reduce((sum, a) => sum + a.coinsEarned, 0);
-    if (answers.every(a => a.isCorrect)) coins += 20;
-    setResults({ answers, coins, correct: answers.filter(a => a.isCorrect).length });
-    await onSaveAnswers(answers, coins, activeLabel);
-    setCompletedLabels(prev => [...prev, activeLabel]);
   };
 
   const startQuiz = (label) => {
+    if (completedLabels.includes(label)) return; // prevent replay
     const qs = getDailyQuestions(label);
     setQuestions(qs);
     setActiveLabel(label);
@@ -168,7 +177,7 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
                     cursor: done ? "default" : "pointer",
                   }}
                   disabled={done}
-                  onClick={() => !done && startQuiz(label)}>
+                  onClick={() => startQuiz(label)}>
                   {done ? "✅ Completado" : "Jugar"}
                 </button>
               </div>
@@ -218,8 +227,8 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
           })}
         </div>
 
-        <button style={{ ...btn("outline"), width:"100%", marginTop:8 }} onClick={() => setPhase("list")}>
-          Volver a la lista
+        <button style={{ ...btn("outline"), width:"100%", marginTop:8 }} onClick={() => { setPhase("list"); setActiveLabel(null); setResults(null); }}>
+          Ver otros quizzes
         </button>
       </div>
     );
