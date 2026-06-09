@@ -8,6 +8,7 @@ import { ProfileScreen } from "./components/ProfileScreen.jsx";
 import { MundialScreen } from "./components/MundialScreen.jsx";
 import { TendenciasScreen } from "./components/TendenciasScreen.jsx";
 import { QuizScreen } from "./components/QuizScreen.jsx";
+import { StatsScreen } from "./components/StatsScreen.jsx";
 
 // ─── HOME ─────────────────────────────────────────────────────────────────────
 
@@ -49,7 +50,7 @@ const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,p
         <button style={btn()} onClick={()=>setScreen("admin")}>Panel de Admin</button>
       )}
       {passError&&<div style={{color:C.red,fontSize:12,marginTop:6}}>Contraseña incorrecta</div>}
-
+      {!adminAuth&&<div style={{color:"#555",fontSize:11,marginTop:6}}>Contraseña inicial: admin123</div>}
     </div>
     <div style={{display:"flex",flexDirection:"column",gap:8}}>
       <button style={{...btn("outline"),width:"100%"}} onClick={()=>setScreen("ranking")}>🏆 Ver Tabla General</button>
@@ -154,28 +155,26 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
       {/* Quiz management */}
       <div style={card}>
         <div style={sec}>🧠 Control de Quizzes</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
-          {Array.from({length:17},(_,i)=>{
-            const label=`quiz-${i+1}`;
-            const isOpen=quizOpenDates&&quizOpenDates.includes(label);
-            return (
-              <button key={label}
-                onClick={()=>handleQuizToggle(label)}
-                style={{
-                  background:isOpen?"rgba(27,127,74,0.2)":"rgba(255,255,255,0.04)",
-                  border:`1px solid ${isOpen?"#1b7f4a":"#333"}`,
-                  borderRadius:8,padding:"10px 12px",cursor:"pointer",
-                  textAlign:"center",minWidth:56,
-                  color:isOpen?"#4ade80":"#888",
-                }}>
-                <div style={{fontSize:11,fontWeight:700,color:isOpen?"#4ade80":"#ccc"}}>Quiz</div>
-                <div style={{fontSize:20,fontWeight:900,color:isOpen?"#4ade80":"#ccc"}}>{i+1}</div>
-                {isOpen&&<div style={{fontSize:10,color:"#4ade80",marginTop:2}}>🟢</div>}
-              </button>
-            );
-          })}
+        <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+          <input style={{...inp,flex:1}} placeholder="Etiqueta del quiz (ej: 2026-06-11)"
+            value={newQuizLabel} onChange={e=>setNewQuizLabel(e.target.value)}/>
+          <button style={btn()} onClick={()=>{if(newQuizLabel.trim()){handleQuizToggle(newQuizLabel.trim());setNewQuizLabel("");}}}>
+            Abrir quiz
+          </button>
         </div>
-        <div style={{fontSize:12,color:"#888"}}>Click en un quiz para abrirlo o cerrarlo. Verde = abierto.</div>
+        {quizOpenDates&&quizOpenDates.length>0?(
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {quizOpenDates.map(label=>(
+              <div key={label} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(27,127,74,0.1)",border:"1px solid #1b7f4a",borderRadius:8,padding:"8px 12px"}}>
+                <span style={{fontWeight:600}}>📅 {label}</span>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:12,color:"#4ade80"}}>🟢 Abierto</span>
+                  <button style={{background:"#7f1b1b",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12}} onClick={()=>handleQuizToggle(label)}>Cerrar</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ):<div style={{color:"#555",fontSize:13}}>No hay quizzes abiertos.</div>}
       </div>
 
       {/* Contraseña */}
@@ -709,7 +708,7 @@ export default function QuinielaMundial() {
   },[participants]);
 
   // Quiz save
-  const handleSaveQuizAnswers=async(answers,coinsEarned,label)=>{
+  const handleSaveQuizAnswers=useCallback(async(answers,coinsEarned,label)=>{
     if(!activeParticipantId) return;
     const today=new Date();
     const date=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
@@ -722,7 +721,7 @@ export default function QuinielaMundial() {
     await db.upsertCoins(activeParticipantId,current+coinsEarned);
     const newCoins=await db.getCoins();
     setCoins(newCoins);
-  };
+  },[activeParticipantId,coins]);
 
   // Scorers
   const handleUpsertScorer=useCallback(async(scorer)=>{
@@ -776,6 +775,7 @@ export default function QuinielaMundial() {
     tendencias: <TendenciasScreen participants={participants} results={results} openJornadas={openJornadas}/>,
     quiz: <QuizScreen participant={activeParticipant} openQuizDates={quizOpenDates} onSaveAnswers={handleSaveQuizAnswers}/>,
     perfil: <ProfileScreen participant={activeParticipant} results={results} earnedBadges={earnedBadges} coins={coins}/>,
+    stats: <StatsScreen participants={participants} results={results}/>,
   };
 
   return (
@@ -807,6 +807,7 @@ export default function QuinielaMundial() {
           <button style={navBtn(screen==="mundial")} onClick={()=>setScreen("mundial")}>🌎 Mundial</button>
           <button style={navBtn(screen==="tendencias")} onClick={()=>setScreen("tendencias")}>🔮 Tendencias</button>
           <button style={navBtn(screen==="quiz")} onClick={()=>setScreen("quiz")}>🧠 Quiz</button>
+          <button style={navBtn(screen==="stats")} onClick={()=>setScreen("stats")}>📊 Stats</button>
           {adminAuth&&<button style={navBtn(screen==="admin")} onClick={()=>setScreen("admin")}>⚙️ Admin</button>}
         </div>
       </div>
