@@ -49,7 +49,7 @@ const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,p
         <button style={btn()} onClick={()=>setScreen("admin")}>Panel de Admin</button>
       )}
       {passError&&<div style={{color:C.red,fontSize:12,marginTop:6}}>Contraseña incorrecta</div>}
-      {!adminAuth&&<div style={{color:"#555",fontSize:11,marginTop:6}}>Contraseña inicial: admin123</div>}
+
     </div>
     <div style={{display:"flex",flexDirection:"column",gap:8}}>
       <button style={{...btn("outline"),width:"100%"}} onClick={()=>setScreen("ranking")}>🏆 Ver Tabla General</button>
@@ -154,26 +154,36 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
       {/* Quiz management */}
       <div style={card}>
         <div style={sec}>🧠 Control de Quizzes</div>
-        <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-          <input style={{...inp,flex:1}} placeholder="Etiqueta del quiz (ej: 2026-06-11)"
-            value={newQuizLabel} onChange={e=>setNewQuizLabel(e.target.value)}/>
-          <button style={btn()} onClick={()=>{if(newQuizLabel.trim()){handleQuizToggle(newQuizLabel.trim());setNewQuizLabel("");}}}>
-            Abrir quiz
-          </button>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
+          {Array.from({length:17},(_,i)=>{
+            const d=new Date("2026-06-11");
+            d.setDate(d.getDate()+i);
+            const label=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+            const days=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+            const months=["jun","jul"];
+            const dayName=days[d.getDay()];
+            const dayNum=d.getDate();
+            const mon=months[d.getMonth()-5]||"jun";
+            const isOpen=quizOpenDates&&quizOpenDates.includes(label);
+            return (
+              <button key={label}
+                onClick={()=>handleQuizToggle(label)}
+                style={{
+                  background:isOpen?"rgba(27,127,74,0.2)":"rgba(255,255,255,0.04)",
+                  border:`1px solid ${isOpen?"#1b7f4a":"#333"}`,
+                  borderRadius:8,padding:"8px 10px",cursor:"pointer",
+                  textAlign:"center",minWidth:52,
+                  color:isOpen?"#4ade80":"#888",
+                }}>
+                <div style={{fontSize:10,fontWeight:700}}>{dayName}</div>
+                <div style={{fontSize:16,fontWeight:900,color:isOpen?"#4ade80":"#ccc"}}>{dayNum}</div>
+                <div style={{fontSize:10}}>{mon}</div>
+                {isOpen&&<div style={{fontSize:9,color:"#4ade80",marginTop:2}}>🟢</div>}
+              </button>
+            );
+          })}
         </div>
-        {quizOpenDates&&quizOpenDates.length>0?(
-          <div style={{display:"flex",flexDirection:"column",gap:6}}>
-            {quizOpenDates.map(label=>(
-              <div key={label} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(27,127,74,0.1)",border:"1px solid #1b7f4a",borderRadius:8,padding:"8px 12px"}}>
-                <span style={{fontWeight:600}}>📅 {label}</span>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:12,color:"#4ade80"}}>🟢 Abierto</span>
-                  <button style={{background:"#7f1b1b",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12}} onClick={()=>handleQuizToggle(label)}>Cerrar</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ):<div style={{color:"#555",fontSize:13}}>No hay quizzes abiertos.</div>}
+        <div style={{fontSize:12,color:"#888"}}>Click en un día para abrir o cerrar su quiz. Verde = abierto.</div>
       </div>
 
       {/* Contraseña */}
@@ -813,3 +823,4 @@ export default function QuinielaMundial() {
     </div>
   );
 }
+
