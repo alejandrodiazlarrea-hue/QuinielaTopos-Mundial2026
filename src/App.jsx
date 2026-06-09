@@ -385,7 +385,30 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
                 {i<3?medals[i]:`#${i+1}`}
               </div>
               <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:16}}>{p.name}</div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontWeight:700,fontSize:16}}>{p.name}</span>
+                  {(()=>{
+                    // Calc prev jornada ranking (exclude latest jornada)
+                    const latestJ = Math.max(...[1,2,3].filter(j=>ALL_MATCHES.some(m=>m.jornada===j&&results[m.id]?.homeGoals!=null)));
+                    if(!latestJ||latestJ===0) return null;
+                    const prevRanking=[...ranking].map(pp=>{
+                      let prevPts=0;
+                      ALL_MATCHES.forEach(m=>{
+                        if(m.jornada>=latestJ) return;
+                        const r=results[m.id];
+                        const pred=(pp.predictions||{})[m.id];
+                        if(r&&r.homeGoals!=null&&pred){const pts=calcScore(pred,r);if(pts!=null)prevPts+=pts;}
+                      });
+                      return {...pp,prevPts};
+                    }).sort((a,b)=>b.prevPts-a.prevPts);
+                    const prevPos=prevRanking.findIndex(pp=>pp.id===p.id)+1;
+                    const currPos=i+1;
+                    const diff=prevPos-currPos;
+                    if(diff>0) return <span style={{color:"#4ade80",fontSize:13,fontWeight:700}}>▲{diff}</span>;
+                    if(diff<0) return <span style={{color:"#f87171",fontSize:13,fontWeight:700}}>▼{Math.abs(diff)}</span>;
+                    return <span style={{color:"#555",fontSize:13}}>—</span>;
+                  })()}
+                </div>
                 <div style={{marginTop:6,background:"rgba(255,255,255,0.06)",borderRadius:4,height:6,overflow:"hidden"}}>
                   <div style={{height:"100%",width:`${Math.round((p.total/maxPts)*100)}%`,background:i===0?C.red:C.blue,borderRadius:4}}/>
                 </div>
@@ -807,7 +830,6 @@ export default function QuinielaMundial() {
           <button style={navBtn(screen==="mundial")} onClick={()=>setScreen("mundial")}>🌎 Mundial</button>
           <button style={navBtn(screen==="tendencias")} onClick={()=>setScreen("tendencias")}>🔮 Tendencias</button>
           <button style={navBtn(screen==="quiz")} onClick={()=>setScreen("quiz")}>🧠 Quiz</button>
-          <button style={navBtn(screen==="stats")} onClick={()=>setScreen("stats")}>📊 Stats</button>
           {adminAuth&&<button style={navBtn(screen==="admin")} onClick={()=>setScreen("admin")}>⚙️ Admin</button>}
         </div>
       </div>
