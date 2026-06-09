@@ -1,48 +1,129 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { QUIZ_QUESTIONS } from "../data/quiz.js";
 import { C, card, sec, btn } from "./ui.jsx";
+import { db } from "../lib/supabase.js";
 
 const getTodayDate = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 };
 
-const getDailyQuestions = (date) => {
-  // Deterministic shuffle based on date
-  const seed = date.split("-").reduce((a,b)=>a+Number(b),0);
-  const easy = QUIZ_QUESTIONS.filter(q=>q.difficulty==="facil");
-  const medium = QUIZ_QUESTIONS.filter(q=>q.difficulty==="media");
-  const hard = QUIZ_QUESTIONS.filter(q=>q.difficulty==="dificil");
+const getDailyQuestions = (label) => {
+  const seed = label.split("").reduce((a,b) => a + b.charCodeAt(0), 0);
+  const easy = QUIZ_QUESTIONS.filter(q => q.difficulty === "facil");
+  const medium = QUIZ_QUESTIONS.filter(q => q.difficulty === "media");
+  const hard = QUIZ_QUESTIONS.filter(q => q.difficulty === "dificil");
 
   const pick = (arr, n, offset=0) => {
-    const shuffled = [...arr].sort((a,b)=>{
-      const ha = (a.id||0)*seed+offset, hb = (b.id||0)*seed+offset;
-      return ha%97 - hb%97;
-    });
-    return shuffled.slice(0,n);
+    return [...arr].sort((a,b) => {
+      const ha = ((a.correct_index+1) * seed + offset * 31) % 97;
+      const hb = ((b.correct_index+1) * seed + offset * 31 + arr.indexOf(b)) % 97;
+      return ha - hb;
+    }).slice(0, n);
   };
 
   return [
-    ...pick(easy,2),
-    ...pick(medium,2,1),
-    ...pick(hard,1,2),
-  ].map((q,i)=>({...q, id:q.id||i+1}));
+    ...pick(easy, 2, 0),
+    ...pick(medium, 2, 1),
+    ...pick(hard, 1, 2),
+  ].map((q, i) => ({ ...q, idx: i }));
 };
 
-export const QuizScreen = ({ participant, onSaveAnswers }) => {
-  const [todayAnswers, setTodayAnswers] = useState(null);
-  const [selected, setSelected] = useState({});
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(true);
+const TIMER_SECONDS = 30;
 
+export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
   const today = getTodayDate();
-  const questions = getDailyQuestions(today);
+  const [activeLabel, setActiveLabel] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [currentQ, setCurrentQ] = useState(0);
+  const [selected, setSelected] = useState({});
+  const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
+  const [phase, setPhase] = useState("list"); // list | playing | done
+  const [results, setResults] = useState(null);
+  const [completedLabels, setCompletedLabels] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const timerRef = useRef(null);
 
-  useEffect(()=>{
+  useEffect(() => {
     if (!participant) { setLoading(false); return; }
-    // Check if already answered today (from local state passed via props)
-    setLoading(false);
-  },[participant]);
+    // Check which quizzes participant already completed
+    db.getQuizAnswersByParticipant(participant.id).then(answers => {
+      const labels = [...new Set(answers.map(a => a.quiz_label).filter(Boolean))];
+      setCompletedLabels(labels);
+      setLoading(false);
+    });
+  }, [participant]);
+
+  // Timer
+  useEffect(() => {
+    if (phase !== "playing") return;
+    setTimeLeft(TIMER_SECONDS);
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          // Time's up — auto advance
+          handleTimeUp();
+          return TIMER_SECONDS;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [phase, currentQ]);
+
+  const handleTimeUp = () => {
+    clearInterval(timerRef.current);
+    // Mark as no answer if nothing selected
+    setSelected(prev => {
+      if (prev[currentQ] === undefined) {
+        return { ...prev, [currentQ]: -1 }; // -1 = timed out
+      }
+      return prev;
+    });
+    setTimeout(() => advanceQuestion(), 800);
+  };
+
+  const handleSelect = (optIdx) => {
+    if (selected[currentQ] !== undefined) return;
+    clearInterval(timerRef.current);
+    setSelected(prev => ({ ...prev, [currentQ]: optIdx }));
+    setTimeout(() => advanceQuestion(), 1200);
+  };
+
+  const advanceQuestion = () => {
+    if (currentQ < questions.length - 1) {
+      setCurrentQ(prev => prev + 1);
+      setTimeLeft(TIMER_SECONDS);
+    } else {
+      finishQuiz();
+    }
+  };
+
+  const finishQuiz = async () => {
+    clearInterval(timerRef.current);
+    setPhase("done");
+    const answers = questions.map((q, i) => {
+      const sel = selected[i] ?? -1;
+      const isCorrect = sel === q.correct_index;
+      return { questionId: q.idx, selectedIndex: sel, isCorrect, coinsEarned: isCorrect ? 10 : 0 };
+    });
+    let coins = answers.reduce((sum, a) => sum + a.coinsEarned, 0);
+    if (answers.every(a => a.isCorrect)) coins += 20;
+    setResults({ answers, coins, correct: answers.filter(a => a.isCorrect).length });
+    await onSaveAnswers(answers, coins, activeLabel);
+    setCompletedLabels(prev => [...prev, activeLabel]);
+  };
+
+  const startQuiz = (label) => {
+    const qs = getDailyQuestions(label);
+    setQuestions(qs);
+    setActiveLabel(label);
+    setCurrentQ(0);
+    setSelected({});
+    setTimeLeft(TIMER_SECONDS);
+    setResults(null);
+    setPhase("playing");
+  };
 
   if (!participant) return (
     <div style={{ maxWidth:600, margin:"0 auto", padding:"24px 16px", textAlign:"center" }}>
@@ -51,96 +132,160 @@ export const QuizScreen = ({ participant, onSaveAnswers }) => {
     </div>
   );
 
-  const handleSubmit = async () => {
-    if (Object.keys(selected).length < questions.length) return;
-    let coins = 0;
-    const answers = questions.map((q,i) => {
-      const isCorrect = selected[i] === q.correct_index;
-      if (isCorrect) coins += 10;
-      return { questionId:q.id, selectedIndex:selected[i], isCorrect, coinsEarned:isCorrect?10:0 };
-    });
-    if (Object.values(selected).filter((_,i)=>selected[i]===questions[i]?.correct_index).length === 5) coins += 20;
-    await onSaveAnswers(answers, coins);
-    setSubmitted(true);
-    setTodayAnswers({ answers, coins });
-  };
+  if (loading) return (
+    <div style={{ maxWidth:600, margin:"0 auto", padding:"24px 16px", textAlign:"center" }}>
+      <div style={{ color:C.red }}>Cargando quiz…</div>
+    </div>
+  );
 
-  const answered = submitted || !!todayAnswers;
-  const results = todayAnswers?.answers || [];
-  const totalCoins = todayAnswers?.coins || 0;
-  const correct = results.filter(r=>r.isCorrect).length;
+  // ── LIST PHASE ──
+  if (phase === "list") {
+    const available = openQuizDates || [];
+    return (
+      <div style={{ maxWidth:600, margin:"0 auto", padding:"20px 16px" }}>
+        <div style={{ fontSize:22, fontWeight:900, marginBottom:4 }}>🧠 Quiz <span style={{color:C.red}}>Mundialista</span></div>
+        <div style={{ fontSize:12, color:"#888", marginBottom:20 }}>5 preguntas · 30 segundos por pregunta · +10 🪙 por acierto</div>
 
-  const diffLabel = {facil:"🟢 Fácil", media:"🟡 Media", dificil:"🔴 Difícil"};
-  const catEmoji = {Historia:"🏆",Jugadores:"⭐",Momentos:"⚽",Selecciones:"🌎",Cultura:"📚"};
+        {available.length === 0 ? (
+          <div style={{ ...card, textAlign:"center", padding:40 }}>
+            <div style={{ fontSize:40, marginBottom:12 }}>🔒</div>
+            <div style={{ color:"#888" }}>No hay quizzes disponibles aún. El admin los abrirá pronto.</div>
+          </div>
+        ) : (
+          available.map(label => {
+            const done = completedLabels.includes(label);
+            return (
+              <div key={label} style={{ ...card, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px" }}>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:16 }}>Quiz del {label}</div>
+                  <div style={{ fontSize:12, color:"#888", marginTop:2 }}>5 preguntas · +10 🪙 c/u · Bonus +20 🪙 si aciertas todas</div>
+                </div>
+                <button
+                  style={{
+                    ...btn(done ? "success" : "primary"),
+                    minWidth:100,
+                    background: done ? C.green : C.red,
+                    cursor: done ? "default" : "pointer",
+                  }}
+                  disabled={done}
+                  onClick={() => !done && startQuiz(label)}>
+                  {done ? "✅ Completado" : "Jugar"}
+                </button>
+              </div>
+            );
+          })
+        )}
+      </div>
+    );
+  }
+
+  // ── DONE PHASE ──
+  if (phase === "done" && results) {
+    return (
+      <div style={{ maxWidth:600, margin:"0 auto", padding:"20px 16px" }}>
+        <div style={{ fontSize:22, fontWeight:900, marginBottom:20 }}>🧠 Quiz <span style={{color:C.red}}>Completado</span></div>
+        <div style={{ ...card, textAlign:"center", padding:32, background:"rgba(27,127,74,0.1)", border:"1px solid #1b7f4a" }}>
+          <div style={{ fontSize:50, marginBottom:8 }}>
+            {results.correct===5?"🌟":results.correct>=3?"🔥":results.correct>=1?"👍":"😅"}
+          </div>
+          <div style={{ fontSize:24, fontWeight:900, marginBottom:4 }}>{results.correct}/5 correctas</div>
+          <div style={{ fontSize:20, color:"#fbbf24", fontWeight:700 }}>+{results.coins} 🪙 FIFA Coins</div>
+          {results.correct===5&&<div style={{ fontSize:13, color:"#4ade80", marginTop:6 }}>¡Bonus perfecto! +20 🪙 extra</div>}
+        </div>
+
+        {/* Answer review */}
+        <div style={{ marginTop:16 }}>
+          {questions.map((q, i) => {
+            const ans = results.answers[i];
+            const timedOut = ans.selectedIndex === -1;
+            return (
+              <div key={i} style={{ ...card, marginBottom:8, padding:"12px 16px" }}>
+                <div style={{ fontSize:13, fontWeight:700, marginBottom:8 }}>{i+1}. {q.question}</div>
+                <div style={{ fontSize:13 }}>
+                  {timedOut ? (
+                    <span style={{ color:"#f87171" }}>⏱️ Tiempo agotado — Respuesta correcta: {q.options[q.correct_index]}</span>
+                  ) : ans.isCorrect ? (
+                    <span style={{ color:"#4ade80" }}>✅ {q.options[ans.selectedIndex]}</span>
+                  ) : (
+                    <span>
+                      <span style={{ color:"#f87171" }}>❌ {q.options[ans.selectedIndex]}</span>
+                      <span style={{ color:"#888" }}> → ✅ {q.options[q.correct_index]}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <button style={{ ...btn("outline"), width:"100%", marginTop:8 }} onClick={() => setPhase("list")}>
+          Volver a la lista
+        </button>
+      </div>
+    );
+  }
+
+  // ── PLAYING PHASE ──
+  const q = questions[currentQ];
+  if (!q) return null;
+  const timerPct = (timeLeft / TIMER_SECONDS) * 100;
+  const timerColor = timeLeft > 15 ? "#4ade80" : timeLeft > 7 ? "#fbbf24" : C.red;
+  const answered = selected[currentQ] !== undefined;
 
   return (
     <div style={{ maxWidth:600, margin:"0 auto", padding:"20px 16px" }}>
-      <div style={{ fontSize:22, fontWeight:900, marginBottom:4 }}>🧠 Quiz <span style={{color:C.red}}>Mundialista</span></div>
-      <div style={{ fontSize:12, color:"#888", marginBottom:20 }}>
-        {today} · 5 preguntas · Una vez por día · +10 🪙 por acierto
+      {/* Header */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+        <div style={{ fontSize:13, color:"#888" }}>Pregunta {currentQ+1} / {questions.length}</div>
+        <div style={{ fontSize:22, fontWeight:900, color:timerColor, fontVariantNumeric:"tabular-nums", minWidth:40, textAlign:"right" }}>
+          {timeLeft}s
+        </div>
       </div>
 
-      {answered && (
-        <div style={{ ...card, textAlign:"center", background:"rgba(27,127,74,0.1)", border:"1px solid #1b7f4a", marginBottom:20 }}>
-          <div style={{ fontSize:36, marginBottom:8 }}>
-            {correct===5?"🌟":correct>=3?"🔥":correct>=1?"👍":"😅"}
-          </div>
-          <div style={{ fontSize:20, fontWeight:900 }}>{correct}/5 correctas</div>
-          <div style={{ fontSize:16, color:"#fbbf24", fontWeight:700, marginTop:4 }}>+{totalCoins} 🪙 FIFA Coins</div>
-          {correct===5&&<div style={{ fontSize:13, color:"#4ade80", marginTop:4 }}>¡Bonus de jornada perfecta! +20 🪙</div>}
+      {/* Timer bar */}
+      <div style={{ height:6, background:"rgba(255,255,255,0.08)", borderRadius:3, marginBottom:20, overflow:"hidden" }}>
+        <div style={{ height:"100%", width:`${timerPct}%`, background:timerColor, borderRadius:3, transition:"width 1s linear" }}/>
+      </div>
+
+      {/* Question */}
+      <div style={{ ...card, padding:"20px" }}>
+        <div style={{ fontSize:11, color:"#888", marginBottom:8 }}>
+          {q.category} · {q.difficulty === "facil" ? "🟢 Fácil" : q.difficulty === "media" ? "🟡 Media" : "🔴 Difícil"}
         </div>
-      )}
+        <div style={{ fontWeight:700, fontSize:17, lineHeight:1.4, marginBottom:20 }}>{q.question}</div>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {q.options.map((opt, oi) => {
+            const sel = selected[currentQ];
+            let bg = "rgba(255,255,255,0.04)", border = "1px solid #333", color = "#ccc";
+            if (answered) {
+              if (oi === q.correct_index) { bg="rgba(27,127,74,0.2)"; border="1px solid #1b7f4a"; color="#4ade80"; }
+              else if (sel === oi) { bg="rgba(127,27,27,0.2)"; border="1px solid #7f1b1b"; color="#f87171"; }
+            } else if (sel === oi) {
+              bg=C.blue; border=`1px solid ${C.red}`; color="#fff";
+            }
+            return (
+              <button key={oi} disabled={answered}
+                style={{ background:bg, border, borderRadius:8, color, padding:"12px 16px", textAlign:"left", cursor:answered?"default":"pointer", fontSize:14, fontWeight:sel===oi?700:"normal" }}
+                onClick={() => handleSelect(oi)}>
+                <span style={{ color:"#666", marginRight:8 }}>{["A","B","C","D"][oi]}.</span> {opt}
+                {answered && oi===q.correct_index && <span style={{float:"right"}}>✅</span>}
+                {answered && sel===oi && oi!==q.correct_index && <span style={{float:"right"}}>❌</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      {questions.map((q,i)=>{
-        const ans = results[i];
-        const isAnswered = answered;
-        const myAnswer = isAnswered ? ans?.selectedIndex : selected[i];
-        const isCorrect = isAnswered ? ans?.isCorrect : false;
-
-        return (
-          <div key={i} style={{ ...card, marginBottom:12 }}>
-            <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:8 }}>
-              <span style={{ fontSize:11, color:"#888" }}>{catEmoji[q.category]||"❓"} {q.category}</span>
-              <span style={{ fontSize:10, color:"#666" }}>·</span>
-              <span style={{ fontSize:11, color:"#666" }}>{diffLabel[q.difficulty]||q.difficulty}</span>
-              <span style={{ fontSize:11, color:"#555", marginLeft:"auto" }}>Pregunta {i+1}/5</span>
-            </div>
-            <div style={{ fontWeight:700, fontSize:15, marginBottom:12, lineHeight:1.4 }}>{q.question}</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              {q.options.map((opt,oi)=>{
-                let bg = "rgba(255,255,255,0.04)", border = "1px solid #333", color = "#ccc";
-                if (myAnswer === oi) {
-                  if (!isAnswered) { bg="#0f3460"; border=`1px solid ${C.red}`; color="#fff"; }
-                  else if (isCorrect) { bg="rgba(27,127,74,0.2)"; border="1px solid #1b7f4a"; color="#4ade80"; }
-                  else { bg="rgba(127,27,27,0.2)"; border="1px solid #7f1b1b"; color="#f87171"; }
-                } else if (isAnswered && oi === q.correct_index) {
-                  bg="rgba(27,127,74,0.1)"; border="1px solid #1b7f4a"; color="#4ade80";
-                }
-                return (
-                  <button key={oi} disabled={isAnswered}
-                    style={{ background:bg, border, borderRadius:8, color, padding:"10px 14px", textAlign:"left", cursor:isAnswered?"default":"pointer", fontSize:14, fontWeight:myAnswer===oi?700:"normal" }}
-                    onClick={()=>!isAnswered&&setSelected(p=>({...p,[i]:oi}))}>
-                    {["A","B","C","D"][oi]}. {opt}
-                    {isAnswered && oi===q.correct_index && <span style={{float:"right"}}>✅</span>}
-                    {isAnswered && myAnswer===oi && !isCorrect && <span style={{float:"right"}}>❌</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-
-      {!answered && (
-        <button
-          style={{ ...btn(), width:"100%", marginTop:8, opacity:Object.keys(selected).length<questions.length?0.5:1 }}
-          onClick={handleSubmit}
-          disabled={Object.keys(selected).length < questions.length}>
-          {Object.keys(selected).length < questions.length
-            ? `Responde todas las preguntas (${Object.keys(selected).length}/5)`
-            : "Enviar respuestas"}
-        </button>
-      )}
+      {/* Progress dots */}
+      <div style={{ display:"flex", justifyContent:"center", gap:8, marginTop:16 }}>
+        {questions.map((_,i) => (
+          <div key={i} style={{
+            width:10, height:10, borderRadius:"50%",
+            background: i < currentQ ? (results?.answers[i]?.isCorrect ? "#4ade80" : "#f87171") :
+                        i === currentQ ? C.red : "#333"
+          }}/>
+        ))}
+      </div>
     </div>
   );
 };
