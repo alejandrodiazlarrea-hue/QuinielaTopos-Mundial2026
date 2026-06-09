@@ -823,4 +823,3 @@ export default function QuinielaMundial() {
     </div>
   );
 }
-
