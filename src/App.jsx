@@ -156,15 +156,7 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
         <div style={sec}>🧠 Control de Quizzes</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
           {Array.from({length:17},(_,i)=>{
-            const base=new Date(2026,5,11); // June 11 local time
-            base.setDate(base.getDate()+i);
-            const label=`${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,"0")}-${String(base.getDate()).padStart(2,"0")}`;
-            const days=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-            const months=["jun","jul"];
-            const dayName=days[base.getDay()];
-            const dayNum=base.getDate();
-            const d=base;
-            const mon=months[d.getMonth()-5]||"jun";
+            const label=`quiz-${i+1}`;
             const isOpen=quizOpenDates&&quizOpenDates.includes(label);
             return (
               <button key={label}
@@ -172,19 +164,18 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
                 style={{
                   background:isOpen?"rgba(27,127,74,0.2)":"rgba(255,255,255,0.04)",
                   border:`1px solid ${isOpen?"#1b7f4a":"#333"}`,
-                  borderRadius:8,padding:"8px 10px",cursor:"pointer",
-                  textAlign:"center",minWidth:52,
+                  borderRadius:8,padding:"10px 12px",cursor:"pointer",
+                  textAlign:"center",minWidth:56,
                   color:isOpen?"#4ade80":"#888",
                 }}>
-                <div style={{fontSize:10,fontWeight:700}}>{dayName}</div>
-                <div style={{fontSize:16,fontWeight:900,color:isOpen?"#4ade80":"#ccc"}}>{dayNum}</div>
-                <div style={{fontSize:10}}>{mon}</div>
-                {isOpen&&<div style={{fontSize:9,color:"#4ade80",marginTop:2}}>🟢</div>}
+                <div style={{fontSize:11,fontWeight:700,color:isOpen?"#4ade80":"#ccc"}}>Quiz</div>
+                <div style={{fontSize:20,fontWeight:900,color:isOpen?"#4ade80":"#ccc"}}>{i+1}</div>
+                {isOpen&&<div style={{fontSize:10,color:"#4ade80",marginTop:2}}>🟢</div>}
               </button>
             );
           })}
         </div>
-        <div style={{fontSize:12,color:"#888"}}>Click en un día para abrir o cerrar su quiz. Verde = abierto.</div>
+        <div style={{fontSize:12,color:"#888"}}>Click en un quiz para abrirlo o cerrarlo. Verde = abierto.</div>
       </div>
 
       {/* Contraseña */}
