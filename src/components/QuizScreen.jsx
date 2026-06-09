@@ -169,7 +169,7 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
             return (
               <div key={label} style={{ ...card, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px" }}>
                 <div>
-                  <div style={{ fontWeight:700, fontSize:16 }}>Quiz del {label}</div>
+                  <div style={{ fontWeight:700, fontSize:16 }}>Quiz Mundial {label.replace("quiz-","")}</div>
                   <div style={{ fontSize:12, color:"#888", marginTop:2 }}>5 preguntas · +10 🪙 c/u · Bonus +20 🪙 si aciertas todas</div>
                 </div>
                 <button
