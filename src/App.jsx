@@ -50,7 +50,6 @@ const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,p
         <button style={btn()} onClick={()=>setScreen("admin")}>Panel de Admin</button>
       )}
       {passError&&<div style={{color:C.red,fontSize:12,marginTop:6}}>Contraseña incorrecta</div>}
-      {!adminAuth&&<div style={{color:"#555",fontSize:11,marginTop:6}}>Contraseña inicial: admin123</div>}
     </div>
     <div style={{display:"flex",flexDirection:"column",gap:8}}>
       <button style={{...btn("outline"),width:"100%"}} onClick={()=>setScreen("ranking")}>🏆 Ver Tabla General</button>
