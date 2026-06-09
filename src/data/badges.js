@@ -1,7 +1,7 @@
 import { ALL_MATCHES, getResult, isExact, isResultCorrect } from "../data/matches.js";
 
 export const BADGE_DEFS = {
-  EZ:           { emoji:"⚡", name:"EZ",             desc:"Marcador exacto acertado",                    coins:0,    type:"season" },
+  EZ:           { emoji:"⚡", name:"EZ",             desc:"Marcador exacto acertado",                    coins:50,   type:"season" },
   GRITALO:      { emoji:"👑", name:"Grítalo Reina",  desc:"Más marcadores exactos de la jornada",        coins:70,   type:"dynamic" },
   SO_HOT:       { emoji:"🔥", name:"So Hot",         desc:"5-9 resultados correctos en una jornada",     coins:40,   type:"season" },
   ON_FIRE:      { emoji:"🚒", name:"On Fire",        desc:"10-15 resultados correctos en una jornada",   coins:80,   type:"season" },
