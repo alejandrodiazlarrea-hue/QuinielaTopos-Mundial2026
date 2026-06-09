@@ -156,13 +156,14 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
         <div style={sec}>🧠 Control de Quizzes</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
           {Array.from({length:17},(_,i)=>{
-            const d=new Date("2026-06-11");
-            d.setDate(d.getDate()+i);
-            const label=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+            const base=new Date(2026,5,11); // June 11 local time
+            base.setDate(base.getDate()+i);
+            const label=`${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,"0")}-${String(base.getDate()).padStart(2,"0")}`;
             const days=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
             const months=["jun","jul"];
-            const dayName=days[d.getDay()];
-            const dayNum=d.getDate();
+            const dayName=days[base.getDay()];
+            const dayNum=base.getDate();
+            const d=base;
             const mon=months[d.getMonth()-5]||"jun";
             const isOpen=quizOpenDates&&quizOpenDates.includes(label);
             return (
