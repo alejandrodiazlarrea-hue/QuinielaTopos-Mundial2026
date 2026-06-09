@@ -709,11 +709,12 @@ export default function QuinielaMundial() {
   },[participants]);
 
   // Quiz save
-  const handleSaveQuizAnswers=useCallback(async(answers,coinsEarned,label)=>{
+  const handleSaveQuizAnswers=async(answers,coinsEarned,label)=>{
     if(!activeParticipantId) return;
     const today=new Date();
     const date=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     const quizLabel=label||date;
+    console.log("Saving quiz with label:", quizLabel);
     for(const ans of answers){
       await db.insertQuizAnswer(activeParticipantId,ans.questionId,date,ans.selectedIndex,ans.isCorrect,ans.coinsEarned,quizLabel);
     }
@@ -722,7 +723,7 @@ export default function QuinielaMundial() {
     await db.upsertCoins(activeParticipantId,current+coinsEarned);
     const newCoins=await db.getCoins();
     setCoins(newCoins);
-  },[activeParticipantId,coins]);
+  };
 
   // Scorers
   const handleUpsertScorer=useCallback(async(scorer)=>{
