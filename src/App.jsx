@@ -60,10 +60,13 @@ const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,p
 
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
 
-const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultChange,toggleJornada,newAdminPass,setNewAdminPass,handleChangePass,ranking,handleDeleteParticipant,handleCalcBadges}) => {
+const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultChange,toggleJornada,newAdminPass,setNewAdminPass,handleChangePass,ranking,handleDeleteParticipant,handleCalcBadges,quizOpenDates,handleQuizToggle,handleRenameParticipant}) => {
   const [gFilter,setGFilter]=useState("Todos");
   const [jFilter,setJFilter]=useState(0);
   const [confirmDelete,setConfirmDelete]=useState(null);
+  const [editingName,setEditingName]=useState(null);
+  const [newNameInput,setNewNameInput]=useState("");
+  const [newQuizLabel,setNewQuizLabel]=useState("");
   const groups=[...new Set(ALL_MATCHES.map(m=>m.group))];
   const filtered=ALL_MATCHES.filter(m=>(gFilter==="Todos"||m.group===gFilter)&&(jFilter===0||m.jornada===jFilter));
   const byDate=filtered.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
@@ -148,6 +151,31 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
         ))}
       </div>
 
+      {/* Quiz management */}
+      <div style={card}>
+        <div style={sec}>🧠 Control de Quizzes</div>
+        <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+          <input style={{...inp,flex:1}} placeholder="Etiqueta del quiz (ej: 2026-06-11)"
+            value={newQuizLabel} onChange={e=>setNewQuizLabel(e.target.value)}/>
+          <button style={btn()} onClick={()=>{if(newQuizLabel.trim()){handleQuizToggle(newQuizLabel.trim());setNewQuizLabel("");}}}>
+            Abrir quiz
+          </button>
+        </div>
+        {quizOpenDates&&quizOpenDates.length>0?(
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {quizOpenDates.map(label=>(
+              <div key={label} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(27,127,74,0.1)",border:"1px solid #1b7f4a",borderRadius:8,padding:"8px 12px"}}>
+                <span style={{fontWeight:600}}>📅 {label}</span>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:12,color:"#4ade80"}}>🟢 Abierto</span>
+                  <button style={{background:"#7f1b1b",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12}} onClick={()=>handleQuizToggle(label)}>Cerrar</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ):<div style={{color:"#555",fontSize:13}}>No hay quizzes abiertos.</div>}
+      </div>
+
       {/* Contraseña */}
       <div style={card}>
         <div style={sec}>Cambiar Contraseña Admin</div>
@@ -166,19 +194,36 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
             const pr=ranking.find(r=>r.id===p.id);
             return (
               <div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.05)",gap:8}}>
-                <span style={{fontWeight:600,flex:1}}>{p.name}</span>
-                <span style={{color:C.red,fontWeight:700,minWidth:50,textAlign:"right"}}>{pr?.total??0} pts</span>
-                {confirmDelete===p.id?(
-                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    <span style={{fontSize:12,color:"#f87171"}}>¿Eliminar?</span>
-                    <button onClick={()=>{handleDeleteParticipant(p.id);setConfirmDelete(null);}}
-                      style={{background:"#7f1b1b",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>Sí</button>
-                    <button onClick={()=>setConfirmDelete(null)}
-                      style={{background:"#333",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>No</button>
+                {editingName===p.id?(
+                  <div style={{display:"flex",gap:6,flex:1,alignItems:"center"}}>
+                    <input style={{...inp,flex:1,padding:"4px 8px",fontSize:13}} value={newNameInput}
+                      onChange={e=>setNewNameInput(e.target.value)}
+                      onKeyDown={e=>{if(e.key==="Enter"){handleRenameParticipant(p.id,newNameInput);setEditingName(null);}}}
+                      autoFocus/>
+                    <button onClick={()=>{handleRenameParticipant(p.id,newNameInput);setEditingName(null);}}
+                      style={{background:"#1b7f4a",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>✓</button>
+                    <button onClick={()=>setEditingName(null)}
+                      style={{background:"#333",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>✕</button>
                   </div>
                 ):(
-                  <button onClick={()=>setConfirmDelete(p.id)}
-                    style={{background:"transparent",border:"1px solid #444",color:"#888",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>🗑️</button>
+                  <>
+                    <span style={{fontWeight:600,flex:1}}>{p.name}</span>
+                    <span style={{color:C.red,fontWeight:700,minWidth:50,textAlign:"right"}}>{pr?.total??0} pts</span>
+                    <button onClick={()=>{setEditingName(p.id);setNewNameInput(p.name);}}
+                      style={{background:"transparent",border:"1px solid #444",color:"#888",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12}}>✏️</button>
+                    {confirmDelete===p.id?(
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        <span style={{fontSize:12,color:"#f87171"}}>¿Eliminar?</span>
+                        <button onClick={()=>{handleDeleteParticipant(p.id);setConfirmDelete(null);}}
+                          style={{background:"#7f1b1b",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>Sí</button>
+                        <button onClick={()=>setConfirmDelete(null)}
+                          style={{background:"#333",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>No</button>
+                      </div>
+                    ):(
+                      <button onClick={()=>setConfirmDelete(p.id)}
+                        style={{background:"transparent",border:"1px solid #444",color:"#888",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>🗑️</button>
+                    )}
+                  </>
                 )}
               </div>
             );
@@ -499,6 +544,7 @@ export default function QuinielaMundial() {
   const [earnedBadges,setEarnedBadges]=useState([]);
   const [coins,setCoins]=useState([]);
   const [scorers,setScorers]=useState([]);
+  const [quizOpenDates,setQuizOpenDates]=useState([]);
   const [loaded,setLoaded]=useState(false);
 
   const [activeParticipantId,setActiveParticipantId]=useState(null);
@@ -511,6 +557,7 @@ export default function QuinielaMundial() {
       .then(([cfg,parts,res,badges,coinsData,scorersData])=>{
         if(cfg.open_jornadas) setOpenJornadas(cfg.open_jornadas);
         if(cfg.admin_pass) setAdminPass(cfg.admin_pass);
+        if(cfg.quiz_open_dates) setQuizOpenDates(cfg.quiz_open_dates);
         setParticipants(parts);
         setResults(res);
         setEarnedBadges(badges);
@@ -522,14 +569,15 @@ export default function QuinielaMundial() {
 
   useEffect(()=>{
     const interval=setInterval(async()=>{
-      const [parts,res,badges,coinsData,scorersData]=await Promise.all([
-        db.getParticipants(),db.getResults(),db.getBadges(),db.getCoins(),db.getScorers()
+      const [parts,res,badges,coinsData,scorersData,cfg]=await Promise.all([
+        db.getParticipants(),db.getResults(),db.getBadges(),db.getCoins(),db.getScorers(),db.getConfig()
       ]);
       setParticipants(parts);
       setResults(res);
       setEarnedBadges(badges);
       setCoins(coinsData);
       setScorers(scorersData);
+      if(cfg.quiz_open_dates) setQuizOpenDates(cfg.quiz_open_dates);
     },15000);
     return ()=>clearInterval(interval);
   },[]);
@@ -636,13 +684,36 @@ export default function QuinielaMundial() {
     flash(`✅ Badges de Jornada ${jornada} calculados`);
   },[participants,results,coins]);
 
+  // Quiz open/close
+  const handleQuizToggle=useCallback(async(label)=>{
+    const updated=quizOpenDates.includes(label)
+      ? quizOpenDates.filter(d=>d!==label)
+      : [...quizOpenDates, label];
+    setQuizOpenDates(updated);
+    await db.setQuizOpenDates(updated);
+    flash(updated.includes(label)?`✅ Quiz ${label} abierto`:`🔒 Quiz ${label} cerrado`);
+  },[quizOpenDates]);
+
+  // Rename participant
+  const handleRenameParticipant=useCallback(async(id, newName)=>{
+    if(!newName.trim()) return;
+    if(participants.find(p=>p.name.toLowerCase()===newName.toLowerCase()&&p.id!==id)){
+      flash("⚠️ Ese nombre ya existe");
+      return;
+    }
+    await db.updateParticipantName(id, newName.trim());
+    setParticipants(prev=>prev.map(p=>p.id===id?{...p,name:newName.trim()}:p));
+    flash("✅ Nombre actualizado");
+  },[participants]);
+
   // Quiz save
-  const handleSaveQuizAnswers=useCallback(async(answers,coinsEarned)=>{
+  const handleSaveQuizAnswers=useCallback(async(answers,coinsEarned,label)=>{
     if(!activeParticipantId) return;
     const today=new Date();
     const date=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const quizLabel=label||date;
     for(const ans of answers){
-      await db.insertQuizAnswer(activeParticipantId,ans.questionId,date,ans.selectedIndex,ans.isCorrect,ans.coinsEarned);
+      await db.insertQuizAnswer(activeParticipantId,ans.questionId,date,ans.selectedIndex,ans.isCorrect,ans.coinsEarned,quizLabel);
     }
     // Add quiz coins
     const current=coins.find(c=>c.participant_id===activeParticipantId)?.total||0;
@@ -694,14 +765,14 @@ export default function QuinielaMundial() {
 
   const screens = {
     home: <HomeScreen participants={participants} adminAuth={adminAuth} participantName={participantName} setParticipantName={setParticipantName} passInput={passInput} setPassInput={setPassInput} passError={passError} handleNewParticipant={handleNewParticipant} handleAdminLogin={handleAdminLogin} handleSelectParticipant={handleSelectParticipant} setScreen={setScreen} openJornadas={openJornadas}/>,
-    admin: <AdminScreen participants={participants} results={results} openJornadas={openJornadas} savedMsg={savedMsg} handleResultChange={handleResultChange} toggleJornada={toggleJornada} newAdminPass={newAdminPass} setNewAdminPass={setNewAdminPass} handleChangePass={handleChangePass} ranking={ranking} handleDeleteParticipant={handleDeleteParticipant} handleCalcBadges={handleCalcBadges}/>,
+    admin: <AdminScreen participants={participants} results={results} openJornadas={openJornadas} savedMsg={savedMsg} handleResultChange={handleResultChange} toggleJornada={toggleJornada} newAdminPass={newAdminPass} setNewAdminPass={setNewAdminPass} handleChangePass={handleChangePass} ranking={ranking} handleDeleteParticipant={handleDeleteParticipant} handleCalcBadges={handleCalcBadges} quizOpenDates={quizOpenDates} handleQuizToggle={handleQuizToggle} handleRenameParticipant={handleRenameParticipant}/>,
     participant: <ParticipantScreen activeParticipant={activeParticipant} openJornadas={openJornadas} results={results} currentPreds={currentPreds} handlePredChange={handlePredChange} savePredictions={savePredictions} savedMsg={savedMsg} ranking={ranking} activeParticipantId={activeParticipantId} earnedBadges={earnedBadges} coins={coins}/>,
     ranking: <RankingScreen ranking={ranking} results={results} participants={participants} openJornadas={openJornadas} earnedBadges={earnedBadges} coins={coins}/>,
     pronosticos: <PronosticosScreen participants={participants} results={results}/>,
     badges: <BadgesScreen participants={participants} earnedBadges={earnedBadges}/>,
     mundial: <MundialScreen results={results} scorers={scorers} onUpsertScorer={handleUpsertScorer} onDeleteScorer={handleDeleteScorer} isAdmin={adminAuth}/>,
     tendencias: <TendenciasScreen participants={participants} results={results} openJornadas={openJornadas}/>,
-    quiz: <QuizScreen participant={activeParticipant} onSaveAnswers={handleSaveQuizAnswers}/>,
+    quiz: <QuizScreen participant={activeParticipant} openQuizDates={quizOpenDates} onSaveAnswers={handleSaveQuizAnswers}/>,
     perfil: <ProfileScreen participant={activeParticipant} results={results} earnedBadges={earnedBadges} coins={coins}/>,
   };
 
