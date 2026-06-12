@@ -12,7 +12,7 @@ const getTodayDate = () => {
 const ASSIGNMENTS = {
   easy:   [16,2,34,32,11,24,36,27,30,22,23,28,26,13,35,14,0,9,6,39,15,29,5,4,12,37,21,1,31,25,10,33,17,19,8,38,18,3,7,20],
   medium: [3,20,38,19,30,33,21,22,17,26,28,31,0,12,37,34,16,6,27,10,15,11,23,4,13,36,35,39,1,7,18,14,25,8,29,2,5,24,32,9],
-  hard:   [5,11,9,16,6,10,13,18,19,1,2,14,0,4,15,7,3,8,17,12],
+  hard:   [5,8,9,16,6,10,13,18,19,1,2,14,0,4,15,7,3,11,17,12],
 };
 
 const getDailyQuestions = (label) => {
@@ -68,7 +68,7 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
   useEffect(() => { currentQRef.current = currentQ; }, [currentQ]);
   useEffect(() => { questionsRef.current = questions; }, [questions]);
 
-  const doAdvance = (sel) => {
+  const doAdvance = (sel, sel_map) => {
     if (advancingRef.current) return;
     advancingRef.current = true;
     clearInterval(timerRef.current);
@@ -80,7 +80,19 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
         setCurrentQ(q + 1);
         setTimeLeft(TIMER_SECONDS);
       } else {
-        setPhase("finishing");
+        // Last question — finish directly with the selection map
+        const finalSel = sel_map;
+        const answers = qs.map((question, i) => {
+          const s = finalSel[i] ?? -1;
+          const isCorrect = s === question.correct_index;
+          return { questionId: question.idx, selectedIndex: s, isCorrect, coinsEarned: isCorrect ? 10 : 0 };
+        });
+        let coins = answers.reduce((sum, a) => sum + a.coinsEarned, 0);
+        if (answers.every(a => a.isCorrect)) coins += 20;
+        setResults({ answers, coins, correct: answers.filter(a => a.isCorrect).length });
+        setPhase("done");
+        onSaveAnswers(answers, coins, activeLabelRef.current);
+        setCompletedLabels(prev => [...prev, activeLabelRef.current]);
       }
     }, sel === -1 ? 800 : 1000);
   };
@@ -98,7 +110,7 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
             if (s[currentQRef.current] === undefined) {
               const updated = { ...s, [currentQRef.current]: -1 };
               selectedRef.current = updated;
-              doAdvance(-1);
+              doAdvance(-1, updated);
               return updated;
             }
             return s;
@@ -117,23 +129,10 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
     const updated = { ...selected, [currentQ]: optIdx };
     selectedRef.current = updated;
     setSelected(updated);
-    doAdvance(optIdx);
+    doAdvance(optIdx, updated);
   };
 
-  const finishQuiz = async () => {
-    clearInterval(timerRef.current);
-    setPhase("done");
-    const answers = questions.map((q, i) => {
-      const sel = selected[i] ?? -1;
-      const isCorrect = sel === q.correct_index;
-      return { questionId: q.idx, selectedIndex: sel, isCorrect, coinsEarned: isCorrect ? 10 : 0 };
-    });
-    let coins = answers.reduce((sum, a) => sum + a.coinsEarned, 0);
-    if (answers.every(a => a.isCorrect)) coins += 20;
-    setResults({ answers, coins, correct: answers.filter(a => a.isCorrect).length });
-    await onSaveAnswers(answers, coins, activeLabel);
-    setCompletedLabels(prev => [...prev, activeLabel]);
-  };
+
 
   const startQuiz = (label) => {
     const qs = getDailyQuestions(label);
