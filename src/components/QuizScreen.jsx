@@ -8,30 +8,12 @@ const getTodayDate = () => {
   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 };
 
-// Pre-computed question assignments — shuffle indices, not objects
-const computeAssignments = () => {
-  const rand = (seed, i) => {
-    const x = Math.sin(seed * 9301 + i * 49297 + 233280) * 233280;
-    return x - Math.floor(x);
-  };
-  const shuffleIndices = (len, seed) => {
-    return Array.from({length: len}, (_, i) => i)
-      .map((i) => ({ i, r: rand(seed, i) }))
-      .sort((a, b) => a.r - b.r)
-      .map(x => x.i);
-  };
-  const SEED = 2026;
-  const easyCount = QUIZ_QUESTIONS.filter(q => q.difficulty === "facil").length;
-  const mediumCount = QUIZ_QUESTIONS.filter(q => q.difficulty === "media").length;
-  const hardCount = QUIZ_QUESTIONS.filter(q => q.difficulty === "dificil").length;
-  return {
-    easy: shuffleIndices(easyCount, SEED),
-    medium: shuffleIndices(mediumCount, SEED + 1),
-    hard: shuffleIndices(hardCount, SEED + 2),
-  };
+// Hardcoded assignments computed offline — guaranteed zero repeats across 17 quizzes
+const ASSIGNMENTS = {
+  easy:   [16,2,34,32,11,24,36,27,30,22,23,28,26,13,35,14,0,9,6,39,15,29,5,4,12,37,21,1,31,25,10,33,17,19,8,38,18,3,7,20],
+  medium: [3,20,38,19,30,33,21,22,17,26,28,31,0,12,37,34,16,6,27,10,15,11,23,4,13,36,35,39,1,7,18,14,25,8,29,2,5,24,32,9],
+  hard:   [5,11,9,16,6,10,13,18,19,1,2,14,0,4,15,7,3,8,17,12],
 };
-
-const ASSIGNMENTS = computeAssignments();
 
 const getDailyQuestions = (label) => {
   const quizNum = parseInt(label.replace("quiz-","")) || 1;
@@ -49,7 +31,6 @@ const getDailyQuestions = (label) => {
     hard[ASSIGNMENTS.hard[i]],
   ];
 
-  console.log(`Quiz ${quizNum} - hard index: ${ASSIGNMENTS.hard[i]}, question: ${hard[ASSIGNMENTS.hard[i]]?.question?.substring(0,40)}`);
   return picked.map((q, idx) => ({ ...q, idx }));
 };
 
@@ -133,11 +114,9 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
   const handleSelect = (optIdx) => {
     if (selected[currentQ] !== undefined) return;
     clearInterval(timerRef.current);
-    setSelected(prev => {
-      const updated = { ...prev, [currentQ]: optIdx };
-      selectedRef.current = updated;
-      return updated;
-    });
+    const updated = { ...selected, [currentQ]: optIdx };
+    selectedRef.current = updated;
+    setSelected(updated);
     doAdvance(optIdx);
   };
 
