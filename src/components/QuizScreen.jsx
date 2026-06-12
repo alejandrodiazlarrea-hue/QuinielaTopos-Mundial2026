@@ -49,6 +49,7 @@ const getDailyQuestions = (label) => {
     hard[ASSIGNMENTS.hard[i]],
   ];
 
+  console.log(`Quiz ${quizNum} - hard index: ${ASSIGNMENTS.hard[i]}, question: ${hard[ASSIGNMENTS.hard[i]]?.question?.substring(0,40)}`);
   return picked.map((q, idx) => ({ ...q, idx }));
 };
 
