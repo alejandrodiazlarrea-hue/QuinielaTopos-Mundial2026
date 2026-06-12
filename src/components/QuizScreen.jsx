@@ -65,8 +65,10 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
   const questionsRef = useRef([]);
   const selectedRef = useRef({});
   const advancingRef = useRef(false);
+  const activeLabelRef = useRef(null);
 
   useEffect(() => { currentQRef.current = currentQ; }, [currentQ]);
+  useEffect(() => { activeLabelRef.current = activeLabel; }, [activeLabel]);
   useEffect(() => { questionsRef.current = questions; }, [questions]);
 
   const doAdvance = (sel, sel_map) => {
@@ -93,7 +95,6 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
         setResults({ answers, coins, correct: answers.filter(a => a.isCorrect).length });
         setPhase("done");
         onSaveAnswers(answers, coins, activeLabelRef.current);
-        setCompletedLabels(prev => [...prev, activeLabelRef.current]);
         setCompletedLabels(prev => [...prev, activeLabelRef.current]);
       }
     }, sel === -1 ? 800 : 1000);
