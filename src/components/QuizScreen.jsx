@@ -8,35 +8,45 @@ const getTodayDate = () => {
   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 };
 
+// Pre-computed question assignments — shuffle indices, not objects
+const computeAssignments = () => {
+  const rand = (seed, i) => {
+    const x = Math.sin(seed * 9301 + i * 49297 + 233280) * 233280;
+    return x - Math.floor(x);
+  };
+  const shuffleIndices = (len, seed) => {
+    return Array.from({length: len}, (_, i) => i)
+      .map((i) => ({ i, r: rand(seed, i) }))
+      .sort((a, b) => a.r - b.r)
+      .map(x => x.i);
+  };
+  const SEED = 2026;
+  const easyCount = QUIZ_QUESTIONS.filter(q => q.difficulty === "facil").length;
+  const mediumCount = QUIZ_QUESTIONS.filter(q => q.difficulty === "media").length;
+  const hardCount = QUIZ_QUESTIONS.filter(q => q.difficulty === "dificil").length;
+  return {
+    easy: shuffleIndices(easyCount, SEED),
+    medium: shuffleIndices(mediumCount, SEED + 1),
+    hard: shuffleIndices(hardCount, SEED + 2),
+  };
+};
+
+const ASSIGNMENTS = computeAssignments();
+
 const getDailyQuestions = (label) => {
   const quizNum = parseInt(label.replace("quiz-","")) || 1;
+  const i = quizNum - 1;
 
-  // Pre-assign questions using a global seeded shuffle — guarantees zero repeats across all 17 quizzes
-  const seededShuffle = (arr, seed) => {
-    const rand = (i) => {
-      const x = Math.sin(seed * 9301 + i * 49297 + 233280) * 233280;
-      return x - Math.floor(x);
-    };
-    // Use index-based sort to avoid indexOf collision on duplicate objects
-    return arr.map((item, i) => ({ item, r: rand(i) }))
-              .sort((a, b) => a.r - b.r)
-              .map(x => x.item);
-  };
-
-  const SEED = 2026;
   const easy = QUIZ_QUESTIONS.filter(q => q.difficulty === "facil");
   const medium = QUIZ_QUESTIONS.filter(q => q.difficulty === "media");
   const hard = QUIZ_QUESTIONS.filter(q => q.difficulty === "dificil");
 
-  const shuffledEasy = seededShuffle(easy, SEED);
-  const shuffledMedium = seededShuffle(medium, SEED + 1);
-  const shuffledHard = seededShuffle(hard, SEED + 2);
-
-  const i = quizNum - 1;
   const picked = [
-    ...shuffledEasy.slice(i * 2, (i + 1) * 2),
-    ...shuffledMedium.slice(i * 2, (i + 1) * 2),
-    ...shuffledHard.slice(i, i + 1),
+    easy[ASSIGNMENTS.easy[i * 2]],
+    easy[ASSIGNMENTS.easy[i * 2 + 1]],
+    medium[ASSIGNMENTS.medium[i * 2]],
+    medium[ASSIGNMENTS.medium[i * 2 + 1]],
+    hard[ASSIGNMENTS.hard[i]],
   ];
 
   return picked.map((q, idx) => ({ ...q, idx }));
