@@ -358,6 +358,7 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
 
 const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,coins}) => {
   const medals=["🥇","🥈","🥉"];
+  const [tooltip, setTooltip] = useState(null); // {key, name, desc, coins, x, y}
   const maxPts=ranking[0]?.total||1;
   const jugados=Object.values(results).filter(r=>r.homeGoals!=null).length;
   // True position: count how many people have strictly more points
@@ -410,13 +411,33 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
                 {Object.entries(badgeCounts).map(([key,count])=>{
                   const def=BADGE_DEFS[key];
                   if(!def) return null;
+                  const isActive=tooltip?.key===key+p.id;
                   return (
-                    <span key={key} title={`${def.name}: ${def.desc}`}
-                      style={{fontSize:16,cursor:"default"}} >
+                    <span key={key}
+                      title={`${def.name}: ${def.desc}`}
+                      onClick={(e)=>{
+                        e.stopPropagation();
+                        setTooltip(isActive?null:{key:key+p.id,name:def.name,desc:def.desc,coins:def.coins,emoji:def.emoji});
+                      }}
+                      style={{fontSize:18,cursor:"pointer",position:"relative",
+                        background:isActive?"rgba(233,69,96,0.15)":"transparent",
+                        borderRadius:6,padding:"2px 4px"}}>
                       {def.emoji}{count>1&&<sup style={{fontSize:9,color:C.red}}>x{count}</sup>}
                     </span>
                   );
                 })}
+              </div>
+            )}
+            {/* Badge tooltip */}
+            {tooltip&&Object.keys(badgeCounts).some(k=>k+p.id===tooltip.key)&&(
+              <div onClick={()=>setTooltip(null)}
+                style={{marginTop:8,background:"#1a1a2e",border:`1px solid ${C.red}`,borderRadius:8,padding:"8px 12px",fontSize:12}}>
+                <div style={{fontWeight:700,fontSize:14}}>{tooltip.emoji} {tooltip.name}</div>
+                <div style={{color:"#888",marginTop:3}}>{tooltip.desc}</div>
+                <div style={{color:tooltip.coins>0?"#4ade80":"#f87171",fontWeight:700,marginTop:4}}>
+                  {tooltip.coins>0?`+${tooltip.coins}`:tooltip.coins} 🪙
+                </div>
+                <div style={{color:"#555",fontSize:10,marginTop:4}}>Toca para cerrar</div>
               </div>
             )}
 
