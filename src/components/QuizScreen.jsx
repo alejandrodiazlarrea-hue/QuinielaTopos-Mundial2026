@@ -93,6 +93,7 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
         setPhase("done");
         onSaveAnswers(answers, coins, activeLabelRef.current);
         setCompletedLabels(prev => [...prev, activeLabelRef.current]);
+        setCompletedLabels(prev => [...prev, activeLabelRef.current]);
       }
     }, sel === -1 ? 800 : 1000);
   };
@@ -164,7 +165,7 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
     return (
       <div style={{ maxWidth:600, margin:"0 auto", padding:"20px 16px" }}>
         <div style={{ fontSize:22, fontWeight:900, marginBottom:4 }}>🧠 Quiz <span style={{color:C.red}}>Mundialista</span></div>
-        <div style={{ fontSize:12, color:"#888", marginBottom:20 }}>5 preguntas · 30 segundos por pregunta · +10 🪙 por acierto</div>
+        <div style={{ fontSize:12, color:"#888", marginBottom:20 }}>5 preguntas · 15 segundos por pregunta · +10 🪙 por acierto</div>
 
         {available.length === 0 ? (
           <div style={{ ...card, textAlign:"center", padding:40 }}>
