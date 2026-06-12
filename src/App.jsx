@@ -743,8 +743,12 @@ export default function QuinielaMundial() {
     const today=new Date();
     const date=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     const quizLabel=label||date;
-    for(const ans of answers){
-      await db.insertQuizAnswer(activeParticipantId,ans.questionId,date,ans.selectedIndex,ans.isCorrect,ans.coinsEarned,quizLabel);
+    const perfectBonus = answers.every(a=>a.isCorrect) ? 20 : 0;
+    for(let i=0;i<answers.length;i++){
+      const ans=answers[i];
+      // Add perfect bonus to last answer so it's preserved in quiz_answers
+      const coinsToSave = i===answers.length-1 ? ans.coinsEarned+perfectBonus : ans.coinsEarned;
+      await db.insertQuizAnswer(activeParticipantId,ans.questionId,date,ans.selectedIndex,ans.isCorrect,coinsToSave,quizLabel);
     }
     // Add quiz coins
     const current=coins.find(c=>c.participant_id===activeParticipantId)?.total||0;
