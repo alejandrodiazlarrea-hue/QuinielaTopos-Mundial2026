@@ -67,49 +67,67 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
     });
   }, [participant]);
 
-  // Timer
+  // Use refs to avoid stale closures in timer
+  const currentQRef = useRef(0);
+  const questionsRef = useRef([]);
+  const selectedRef = useRef({});
+  const advancingRef = useRef(false);
+
+  useEffect(() => { currentQRef.current = currentQ; }, [currentQ]);
+  useEffect(() => { questionsRef.current = questions; }, [questions]);
+
+  const doAdvance = (sel) => {
+    if (advancingRef.current) return;
+    advancingRef.current = true;
+    clearInterval(timerRef.current);
+    const q = currentQRef.current;
+    const qs = questionsRef.current;
+    setTimeout(() => {
+      advancingRef.current = false;
+      if (q < qs.length - 1) {
+        setCurrentQ(q + 1);
+        setTimeLeft(TIMER_SECONDS);
+      } else {
+        setPhase("finishing");
+      }
+    }, sel === -1 ? 800 : 1000);
+  };
+
+  // Timer — resets per question
   useEffect(() => {
     if (phase !== "playing") return;
+    advancingRef.current = false;
     setTimeLeft(TIMER_SECONDS);
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
-          // Time's up — auto advance
-          handleTimeUp();
-          return TIMER_SECONDS;
+          // Time's up
+          setSelected(s => {
+            if (s[currentQRef.current] === undefined) {
+              const updated = { ...s, [currentQRef.current]: -1 };
+              selectedRef.current = updated;
+              doAdvance(-1);
+              return updated;
+            }
+            return s;
+          });
+          return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timerRef.current);
-  }, [phase, currentQ]);
-
-  const handleTimeUp = () => {
-    clearInterval(timerRef.current);
-    // Mark as no answer if nothing selected
-    setSelected(prev => {
-      if (prev[currentQ] === undefined) {
-        return { ...prev, [currentQ]: -1 }; // -1 = timed out
-      }
-      return prev;
-    });
-    setTimeout(() => advanceQuestion(), 800);
-  };
+  }, [phase, currentQ]); // eslint-disable-line
 
   const handleSelect = (optIdx) => {
     if (selected[currentQ] !== undefined) return;
     clearInterval(timerRef.current);
-    setSelected(prev => ({ ...prev, [currentQ]: optIdx }));
-    setTimeout(() => advanceQuestion(), 1200);
-  };
-
-  const advanceQuestion = () => {
-    if (currentQ < questions.length - 1) {
-      setCurrentQ(prev => prev + 1);
-      setTimeLeft(TIMER_SECONDS);
-    } else {
-      finishQuiz();
-    }
+    setSelected(prev => {
+      const updated = { ...prev, [currentQ]: optIdx };
+      selectedRef.current = updated;
+      return updated;
+    });
+    doAdvance(optIdx);
   };
 
   const finishQuiz = async () => {
