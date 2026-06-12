@@ -67,7 +67,7 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
                   <tr style={{ color:"#666", fontSize:11, textTransform:"uppercase" }}>
                     {["#","Selección","PJ","G","E","P","GF","GC","DG","PTS"].map(h=>(
                       <th key={h} style={{ padding:"6px 8px", textAlign:h==="Selección"?"left":"center", fontWeight:700 }}>{h}</th>
-      
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
