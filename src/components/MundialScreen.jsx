@@ -35,8 +35,11 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
 
   const groups = [...new Set(ALL_MATCHES.map(m => m.group))];
   const tableData = buildGroupTable(selectedGroup, results);
-
   const posColors = ["#ffd700","#c0c0c0","#cd7f32",""];
+
+  // Sort scorers and assign true positions with ties
+  const sortedScorers = [...scorers].sort((a,b) => b.goals - a.goals);
+  const getScorerPos = (s) => sortedScorers.filter(r => r.goals > s.goals).length + 1;
 
   return (
     <div style={{ maxWidth:760, margin:"0 auto", padding:"20px 16px" }}>
@@ -84,9 +87,7 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
                       ))}
                     </tr>
                   ))}
-                ));
-              })()}
-              </tbody>
+                </tbody>
               </table>
             </div>
             <div style={{ fontSize:11, color:"#555", marginTop:8 }}>🔴 Clasifican a Ronda de 32</div>
@@ -96,8 +97,8 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
 
       {tab==="goleadores" && (
         <div style={card}>
-          <div style={sec}>⚽ Top Goleadores</div>
-          {scorers.length === 0 ? (
+          <div style={sec}>⚽ Goleadores</div>
+          {sortedScorers.length === 0 ? (
             <div style={{ color:"#555", fontSize:13, textAlign:"center", padding:"20px 0" }}>
               {isAdmin ? "Agrega goleadores desde aquí." : "El admin aún no ha registrado goleadores."}
             </div>
@@ -111,35 +112,31 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
                 </tr>
               </thead>
               <tbody>
-                {(()=>{
-                // Calculate true positions with ties
-                const sorted = [...scorers].sort((a,b)=>b.goals-a.goals);
-                const positions = sorted.map((s,i) => {
-                  if (i===0) return 1;
-                  return sorted[i-1].goals===s.goals ? positions[i-1] : i+1;
-                });
-                return sorted.map((s,i)=>(
-                  <tr key={s.id} style={{ borderTop:"1px solid rgba(255,255,255,0.06)" }}>
-                    <td style={{ padding:"8px", color:posColors[Math.min(positions[i]-1,3)]||"#888", fontWeight:700 }}>{positions[i]}</td>
-                    <td style={{ padding:"8px", fontWeight:600 }}>{s.player_name}</td>
-                    <td style={{ padding:"8px", color:"#888" }}>{s.team}</td>
-                    <td style={{ padding:"8px", textAlign:"center", fontWeight:900, color:C.red, fontSize:18 }}>{s.goals}</td>
-                    <td style={{ padding:"8px", textAlign:"right" }}>
-                      {isAdmin && (
-                        <div style={{ display:"flex", gap:4, justifyContent:"flex-end" }}>
-                          <button style={{ background:"#0f3460", border:"none", color:"#fff", borderRadius:6, padding:"4px 8px", cursor:"pointer", fontSize:12 }}
-                            onClick={()=>{ setEditScorer(s.id); setScorerForm({player_name:s.player_name,team:s.team,goals:s.goals}); }}>
-                            ✏️
-                          </button>
-                          <button style={{ background:"#7f1b1b", border:"none", color:"#fff", borderRadius:6, padding:"4px 8px", cursor:"pointer", fontSize:12 }}
-                            onClick={()=>onDeleteScorer(s.id)}>
-                            🗑️
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {sortedScorers.map((s)=>{
+                  const pos = getScorerPos(s);
+                  return (
+                    <tr key={s.id} style={{ borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+                      <td style={{ padding:"8px", color:posColors[Math.min(pos-1,3)]||"#888", fontWeight:700 }}>{pos}</td>
+                      <td style={{ padding:"8px", fontWeight:600 }}>{s.player_name}</td>
+                      <td style={{ padding:"8px", color:"#888" }}>{s.team}</td>
+                      <td style={{ padding:"8px", textAlign:"center", fontWeight:900, color:C.red, fontSize:18 }}>{s.goals}</td>
+                      <td style={{ padding:"8px", textAlign:"right" }}>
+                        {isAdmin && (
+                          <div style={{ display:"flex", gap:4, justifyContent:"flex-end" }}>
+                            <button style={{ background:"#0f3460", border:"none", color:"#fff", borderRadius:6, padding:"4px 8px", cursor:"pointer", fontSize:12 }}
+                              onClick={()=>{ setEditScorer(s.id); setScorerForm({player_name:s.player_name,team:s.team,goals:s.goals}); }}>
+                              ✏️
+                            </button>
+                            <button style={{ background:"#7f1b1b", border:"none", color:"#fff", borderRadius:6, padding:"4px 8px", cursor:"pointer", fontSize:12 }}
+                              onClick={()=>onDeleteScorer(s.id)}>
+                              🗑️
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -152,7 +149,7 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 <input style={{...inp, flex:2, minWidth:120}} placeholder="Nombre del jugador"
                   value={scorerForm.player_name} onChange={e=>setScorerForm(p=>({...p,player_name:e.target.value}))} />
-                <input style={{...inp, flex:1, minWidth:100}} placeholder="Selección"
+                <input style={{...inp, flex:1, minWidth:100}} placeholder="Selección (ej: 🇲🇽 MEX)"
                   value={scorerForm.team} onChange={e=>setScorerForm(p=>({...p,team:e.target.value}))} />
                 <input style={{...inp, width:70}} type="number" min="0" placeholder="Goles"
                   value={scorerForm.goals} onChange={e=>setScorerForm(p=>({...p,goals:Number(e.target.value)}))} />
