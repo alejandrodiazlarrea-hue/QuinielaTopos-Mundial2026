@@ -361,7 +361,7 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
   const maxPts=ranking[0]?.total||1;
   const jugados=Object.values(results).filter(r=>r.homeGoals!=null).length;
   // True position: count how many people have strictly more points
-  const getTruePos=(p)=>ranking.filter(r=>r.total>p.total).length+1;
+  const getTruePos=(p)=>[...new Set(ranking.map(r=>r.total))].filter(pts=>pts>p.total).length+1;
 
   return (
     <div style={{maxWidth:600,margin:"0 auto",padding:"20px 16px"}}>
