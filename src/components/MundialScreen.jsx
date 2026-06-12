@@ -67,7 +67,7 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
                   <tr style={{ color:"#666", fontSize:11, textTransform:"uppercase" }}>
                     {["#","Selección","PJ","G","E","P","GF","GC","DG","PTS"].map(h=>(
                       <th key={h} style={{ padding:"6px 8px", textAlign:h==="Selección"?"left":"center", fontWeight:700 }}>{h}</th>
-                    ))}
+      
                   </tr>
                 </thead>
                 <tbody>
@@ -84,7 +84,9 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
                       ))}
                     </tr>
                   ))}
-                </tbody>
+                ));
+              })()}
+              </tbody>
               </table>
             </div>
             <div style={{ fontSize:11, color:"#555", marginTop:8 }}>🔴 Clasifican a Ronda de 32</div>
@@ -109,11 +111,18 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
                 </tr>
               </thead>
               <tbody>
-                {scorers.slice(0,5).map((s,i)=>(
+                {(()=>{
+                // Calculate true positions with ties
+                const sorted = [...scorers].sort((a,b)=>b.goals-a.goals);
+                const positions = sorted.map((s,i) => {
+                  if (i===0) return 1;
+                  return sorted[i-1].goals===s.goals ? positions[i-1] : i+1;
+                });
+                return sorted.map((s,i)=>(
                   <tr key={s.id} style={{ borderTop:"1px solid rgba(255,255,255,0.06)" }}>
-                    <td style={{ padding:"8px", color:posColors[i]||"#888", fontWeight:700 }}>{i+1}</td>
+                    <td style={{ padding:"8px", color:posColors[Math.min(positions[i]-1,3)]||"#888", fontWeight:700 }}>{positions[i]}</td>
                     <td style={{ padding:"8px", fontWeight:600 }}>{s.player_name}</td>
-                    <td style={{ padding:"8px", color:"#888" }}>{FLAGS[s.team]||"🏳️"} {ABBR[s.team]||s.team}</td>
+                    <td style={{ padding:"8px", color:"#888" }}>{s.team}</td>
                     <td style={{ padding:"8px", textAlign:"center", fontWeight:900, color:C.red, fontSize:18 }}>{s.goals}</td>
                     <td style={{ padding:"8px", textAlign:"right" }}>
                       {isAdmin && (
