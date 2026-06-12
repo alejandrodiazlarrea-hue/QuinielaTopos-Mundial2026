@@ -17,7 +17,10 @@ const getDailyQuestions = (label) => {
       const x = Math.sin(seed * 9301 + i * 49297 + 233280) * 233280;
       return x - Math.floor(x);
     };
-    return [...arr].sort((a,b) => rand(arr.indexOf(a)) - rand(arr.indexOf(b)));
+    // Use index-based sort to avoid indexOf collision on duplicate objects
+    return arr.map((item, i) => ({ item, r: rand(i) }))
+              .sort((a, b) => a.r - b.r)
+              .map(x => x.item);
   };
 
   const SEED = 2026;
@@ -39,7 +42,7 @@ const getDailyQuestions = (label) => {
   return picked.map((q, idx) => ({ ...q, idx }));
 };
 
-const TIMER_SECONDS = 30;
+const TIMER_SECONDS = 15;
 
 export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
   const today = getTodayDate();
