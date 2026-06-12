@@ -54,6 +54,7 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
     // Check which quizzes participant already completed
     db.getQuizAnswersByParticipant(participant.id).then(answers => {
       const labels = [...new Set(answers.map(a => a.quiz_label).filter(Boolean))];
+      console.log("Completed quiz labels from DB:", labels);
       setCompletedLabels(labels);
       setLoading(false);
     });
