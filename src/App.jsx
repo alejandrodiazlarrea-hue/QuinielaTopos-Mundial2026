@@ -8,9 +8,6 @@ import { ProfileScreen } from "./components/ProfileScreen.jsx";
 import { MundialScreen } from "./components/MundialScreen.jsx";
 import { TendenciasScreen } from "./components/TendenciasScreen.jsx";
 import { QuizScreen } from "./components/QuizScreen.jsx";
-import { StatsScreen } from "./components/StatsScreen.jsx";
-import { FeedScreen } from "./components/FeedScreen.jsx";
-import { JerseyAvatar } from "./components/JerseyAvatar.jsx";
 
 // ─── HOME ─────────────────────────────────────────────────────────────────────
 
@@ -264,17 +261,7 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
         </div>
       </div>
 
-      {/* Jersey + mini stats */}
-      <div style={{display:"flex",gap:8,marginBottom:16,alignItems:"center"}}>
-        <div style={{...card,padding:"12px",marginBottom:0,display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-          <JerseyAvatar number={activeParticipant?.avatar_number||10} size={50}/>
-          <input type="number" min="1" max="99"
-            defaultValue={activeParticipant?.avatar_number||10}
-            onBlur={e=>handleUpdateAvatar(Math.min(99,Math.max(1,Number(e.target.value)||10)))}
-            style={{width:50,textAlign:"center",background:"#0f3460",border:"1px solid #444",borderRadius:6,color:"#fff",fontSize:16,fontWeight:900,padding:"4px 0",outline:"none"}}/>
-          <div style={{fontSize:9,color:"#555"}}>Tu número</div>
-        </div>
-      </div>
+      {/* Mini stats */}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         <div style={{...card,flex:1,padding:"12px",textAlign:"center",marginBottom:0}}>
           <div style={{fontSize:20,fontWeight:900,color:C.red}}>{ranking.find(r=>r.id===activeParticipantId)?.total||0}</div>
@@ -373,11 +360,8 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
   const medals=["🥇","🥈","🥉"];
   const maxPts=ranking[0]?.total||1;
   const jugados=Object.values(results).filter(r=>r.homeGoals!=null).length;
-  // Calculate true position accounting for ties
-  const truePositions = ranking.map((p,i) => {
-    if (i===0) return 1;
-    return ranking[i-1].total===p.total ? truePositions[i-1] : i+1;
-  });
+  // True position: count how many people have strictly more points
+  const getTruePos=(p)=>ranking.filter(r=>r.total>p.total).length+1;
 
   return (
     <div style={{maxWidth:600,margin:"0 auto",padding:"20px 16px"}}>
@@ -395,12 +379,17 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
         const pCoins=coins.find(c=>c.participant_id===p.id)?.total||0;
         return (
           <div key={p.id} style={{...card,padding:"14px 18px",
-            background:i===0?"rgba(233,69,96,0.08)":C.card,
-            border:`1px solid ${i===0?"rgba(233,69,96,0.4)":C.border}`}}>
+            background:getTruePos(p)===1?"rgba(233,69,96,0.08)":C.card,
+            border:`1px solid ${getTruePos(p)===1?"rgba(233,69,96,0.4)":C.border}`}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}>
-              <div style={{fontSize:truePositions[i]<=3?26:18,fontWeight:900,minWidth:36,textAlign:"center",color:truePositions[i]>3?"#555":undefined}}>
-                {truePositions[i]===1?medals[0]:truePositions[i]===2?medals[1]:truePositions[i]===3?medals[2]:`#${truePositions[i]}`}
-              </div>
+              {(()=>{
+                const pos=getTruePos(p);
+                return (
+                  <div style={{fontSize:pos<=3?26:18,fontWeight:900,minWidth:36,textAlign:"center",color:pos>3?"#555":undefined}}>
+                    {pos===1?medals[0]:pos===2?medals[1]:pos===3?medals[2]:`#${pos}`}
+                  </div>
+                );
+              })()}
               <div style={{flex:1}}>
                 <div style={{fontWeight:700,fontSize:16}}>{p.name}</div>
                 <div style={{marginTop:6,background:"rgba(255,255,255,0.06)",borderRadius:4,height:6,overflow:"hidden"}}>
@@ -691,10 +680,18 @@ export default function QuinielaMundial() {
     const allBadges=await db.getBadges();
     setEarnedBadges(allBadges);
     // Recalc coins for all participants
+    // Strategy: get current total, subtract old badge coins, add new badge coins
+    // This preserves quiz coins which are added separately
     for(const p of participants){
       const pBadgeKeys=allBadges.filter(b=>b.participant_id===p.id).map(b=>b.badge_key);
-      const quizCoins=coins.find(c=>c.participant_id===p.id)?.quiz_coins||0;
-      const total=calcCoinsFromBadges(pBadgeKeys)+quizCoins;
+      const badgeCoins=calcCoinsFromBadges(pBadgeKeys);
+      // Get quiz coins by summing quiz_answers coins_earned for this participant
+      const quizRows=await db.getQuizAnswersByParticipant(p.id);
+      const quizCoins=[...new Set(quizRows.map(r=>r.quiz_label))].reduce((sum,label)=>{
+        const labelRows=quizRows.filter(r=>r.quiz_label===label);
+        return sum+labelRows.reduce((s,r)=>s+(r.coins_earned||0),0);
+      },0);
+      const total=badgeCoins+quizCoins;
       await db.upsertCoins(p.id,total);
     }
     const newCoins=await db.getCoins();
@@ -713,20 +710,6 @@ export default function QuinielaMundial() {
   },[quizOpenDates]);
 
   // Rename participant
-  const handleUpdateAvatar = async (number) => {
-    if (!activeParticipantId) return;
-    await db.updateAvatarNumber(activeParticipantId, number);
-    setParticipants(prev => prev.map(p => p.id === activeParticipantId ? {...p, avatar_number: number} : p));
-    // First time avatar bonus
-    const me = participants.find(p => p.id === activeParticipantId);
-    if (!me?.avatar_number || me.avatar_number === 10) {
-      const current = coins.find(c => c.participant_id === activeParticipantId)?.total || 0;
-      await db.upsertCoins(activeParticipantId, current + 10);
-      const newCoins = await db.getCoins();
-      setCoins(newCoins);
-    }
-  };
-
   const handleRenameParticipant=useCallback(async(id, newName)=>{
     if(!newName.trim()) return;
     if(participants.find(p=>p.name.toLowerCase()===newName.toLowerCase()&&p.id!==id)){
@@ -739,21 +722,6 @@ export default function QuinielaMundial() {
   },[participants]);
 
   // Quiz save
-  const handlePhotoBadge = async (totalPosts) => {
-    const badgeMap = {1:"PAPARAZZI", 3:"INFLUENCER", 5:"CONTENT_CREATOR"};
-    const badgeKey = badgeMap[totalPosts];
-    if (!badgeKey || !activeParticipantId) return;
-    const existing = earnedBadges.filter(b => b.participant_id===activeParticipantId && b.badge_key===badgeKey);
-    if (existing.length > 0) return;
-    await db.insertBadge(activeParticipantId, badgeKey, 0);
-    const current = coins.find(c => c.participant_id===activeParticipantId)?.total || 0;
-    await db.upsertCoins(activeParticipantId, current + 40);
-    const [newBadges, newCoins] = await Promise.all([db.getBadges(), db.getCoins()]);
-    setEarnedBadges(newBadges);
-    setCoins(newCoins);
-    flash(`🏅 ¡Nuevo badge desbloqueado!`);
-  };
-
   const handleSaveQuizAnswers=useCallback(async(answers,coinsEarned,label)=>{
     if(!activeParticipantId) return;
     const today=new Date();
@@ -821,8 +789,6 @@ export default function QuinielaMundial() {
     tendencias: <TendenciasScreen participants={participants} results={results} openJornadas={openJornadas}/>,
     quiz: <QuizScreen participant={activeParticipant} openQuizDates={quizOpenDates} onSaveAnswers={handleSaveQuizAnswers}/>,
     perfil: <ProfileScreen participant={activeParticipant} results={results} earnedBadges={earnedBadges} coins={coins}/>,
-    stats: <StatsScreen participants={participants} results={results}/>,
-    feed: <FeedScreen participant={activeParticipant} participants={participants} isAdmin={adminAuth} onBadgeEarned={handlePhotoBadge}/>,
   };
 
   return (
@@ -854,7 +820,6 @@ export default function QuinielaMundial() {
           <button style={navBtn(screen==="mundial")} onClick={()=>setScreen("mundial")}>🌎 Mundial</button>
           <button style={navBtn(screen==="tendencias")} onClick={()=>setScreen("tendencias")}>🔮 Tendencias</button>
           <button style={navBtn(screen==="quiz")} onClick={()=>setScreen("quiz")}>🧠 Quiz</button>
-          <button style={navBtn(screen==="feed")} onClick={()=>setScreen("feed")}>📸 Feed</button>
           {adminAuth&&<button style={navBtn(screen==="admin")} onClick={()=>setScreen("admin")}>⚙️ Admin</button>}
         </div>
       </div>
