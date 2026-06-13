@@ -568,6 +568,7 @@ export default function QuinielaMundial() {
   const [coins,setCoins]=useState([]);
   const [scorers,setScorers]=useState([]);
   const [quizOpenDates,setQuizOpenDates]=useState([]);
+  const [myQuizAnswers,setMyQuizAnswers]=useState([]);
   const [loaded,setLoaded]=useState(false);
 
   const [activeParticipantId,setActiveParticipantId]=useState(null);
@@ -808,7 +809,7 @@ export default function QuinielaMundial() {
     mundial: <MundialScreen results={results} scorers={scorers} onUpsertScorer={handleUpsertScorer} onDeleteScorer={handleDeleteScorer} isAdmin={adminAuth}/>,
     tendencias: <TendenciasScreen participants={participants} results={results} openJornadas={openJornadas}/>,
     quiz: <QuizScreen participant={activeParticipant} openQuizDates={quizOpenDates} onSaveAnswers={handleSaveQuizAnswers}/>,
-    perfil: <ProfileScreen participant={activeParticipant} results={results} earnedBadges={earnedBadges} coins={coins}/>,
+    perfil: <ProfileScreen participant={activeParticipant} results={results} earnedBadges={earnedBadges} coins={coins} quizAnswers={myQuizAnswers}/>,
   };
 
   return (
