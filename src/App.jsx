@@ -569,6 +569,7 @@ export default function QuinielaMundial() {
   const [scorers,setScorers]=useState([]);
   const [quizOpenDates,setQuizOpenDates]=useState([]);
   const [myQuizAnswers,setMyQuizAnswers]=useState([]);
+  const [championPicks,setChampionPicks]=useState([]);
   const [loaded,setLoaded]=useState(false);
 
   const [activeParticipantId,setActiveParticipantId]=useState(null);
@@ -588,6 +589,7 @@ export default function QuinielaMundial() {
         setCoins(coinsData);
         setScorers(scorersData);
         setLoaded(true);
+        db.getChampionPicks().then(picks=>setChampionPicks(picks||[]));
       }).catch(()=>setLoaded(true));
   },[]);
 
@@ -739,6 +741,13 @@ export default function QuinielaMundial() {
   },[participants]);
 
   // Quiz save
+  const handleChampionPick = async (team) => {
+    if (!activeParticipantId) return;
+    await db.setChampionPick(activeParticipantId, team);
+    const updated = await db.getChampionPicks();
+    setChampionPicks(updated || []);
+  };
+
   const handleSaveQuizAnswers=useCallback(async(answers,coinsEarned,label)=>{
     if(!activeParticipantId) return;
     const today=new Date();
@@ -808,7 +817,7 @@ export default function QuinielaMundial() {
     pronosticos: <PronosticosScreen participants={participants} results={results}/>,
     badges: <BadgesScreen participants={participants} earnedBadges={earnedBadges}/>,
     mundial: <MundialScreen results={results} scorers={scorers} onUpsertScorer={handleUpsertScorer} onDeleteScorer={handleDeleteScorer} isAdmin={adminAuth}/>,
-    tendencias: <TendenciasScreen participants={participants} results={results} openJornadas={openJornadas}/>,
+    tendencias: <TendenciasScreen participants={participants} results={results} openJornadas={openJornadas} championPicks={championPicks} activeParticipantId={activeParticipantId} onChampionPick={handleChampionPick}/>,
     quiz: <QuizScreen participant={activeParticipant} openQuizDates={quizOpenDates} onSaveAnswers={handleSaveQuizAnswers}/>,
     perfil: <ProfileScreen participant={activeParticipant} results={results} earnedBadges={earnedBadges} coins={coins} quizAnswers={myQuizAnswers}/>,
   };
