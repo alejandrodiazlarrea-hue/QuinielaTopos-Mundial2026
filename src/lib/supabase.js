@@ -135,6 +135,18 @@ export const db = {
       }),
     });
   },
+  // Champion picks
+  getChampionPicks: async () => {
+    return await supa("champion_picks?select=participant_id,team,created_at") || [];
+  },
+  setChampionPick: async (participantId, team) => {
+    await supa("champion_picks", {
+      method: "POST",
+      prefer: "resolution=merge-duplicates,return=minimal",
+      body: JSON.stringify({ participant_id: participantId, team }),
+    });
+  },
+
   updateParticipantName: async (id, newName) => {
     await supa(`participants?id=eq.${id}`, {
       method: "PATCH", prefer: "return=minimal",
