@@ -345,7 +345,7 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
               )}
               {myPick && (
                 <div style={{background:"rgba(27,127,74,0.1)",border:"1px solid #1b7f4a",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:13}}>
-                  Tu voto: <strong style={{color:"#4ade80"}}>{'{myPick}'}</strong> ✅
+                  Tu voto: <strong style={{color:"#4ade80"}}>{myPick}</strong> ✅
                 </div>
               )}
               {sorted.length > 0 ? (
