@@ -756,6 +756,7 @@ export default function QuinielaMundial() {
     await db.upsertCoins(activeParticipantId,current+coinsEarned);
     const newCoins=await db.getCoins();
     setCoins(newCoins);
+    if(activeParticipantId) db.getQuizAnswersByParticipant(activeParticipantId).then(ans=>setMyQuizAnswers(ans||[]));
   },[activeParticipantId,coins]);
 
   // Scorers
@@ -821,7 +822,7 @@ export default function QuinielaMundial() {
             onSuccess={handleNewWithPassword} onCancel={()=>setModal(null)}/>
         ):(
           <PasswordModal participant={modal.participant} isNew={false}
-            onSuccess={()=>{setModal(null);const p=participants.find(x=>x.id===modal.participant.id);if(p){setActiveParticipantId(p.id);setCurrentPreds({...(p.predictions||{})});setScreen("participant");}}}
+            onSuccess={()=>{setModal(null);const p=participants.find(x=>x.id===modal.participant.id);if(p){setActiveParticipantId(p.id);setCurrentPreds({...(p.predictions||{})});db.getQuizAnswersByParticipant(p.id).then(ans=>setMyQuizAnswers(ans||[]));setScreen("participant");}}}
             onCancel={()=>setModal(null)}/>
         )
       )}
