@@ -37,9 +37,8 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
   const tableData = buildGroupTable(selectedGroup, results);
   const posColors = ["#ffd700","#c0c0c0","#cd7f32",""];
 
-  // Sort scorers and assign true positions with ties
   const sortedScorers = [...scorers].sort((a,b) => b.goals - a.goals);
-  const getScorerPos = (s) => sortedScorers.filter(r => r.goals > s.goals).length + 1;
+  const getScorerPos = (s) => [...new Set(sortedScorers.map(r => r.goals))].sort((a,b)=>b-a).indexOf(s.goals) + 1;
 
   return (
     <div style={{ maxWidth:760, margin:"0 auto", padding:"20px 16px" }}>
