@@ -30,6 +30,28 @@ export const db = {
     });
   },
 
+  // Goal links
+  getGoalLinks: async () => {
+    const rows = await supa("config?key=eq.goal_links&select=value");
+    return (rows && rows[0]) ? (rows[0].value || {}) : {};
+  },
+  setGoalLink: async (key, url) => {
+    const current = await db.getGoalLinks();
+    const updated = { ...current, [key]: url };
+    const exists = await supa("config?key=eq.goal_links&select=key");
+    if (exists && exists.length > 0) {
+      await supa("config?key=eq.goal_links", {
+        method: "PATCH", prefer: "return=minimal",
+        body: JSON.stringify({ value: updated }),
+      });
+    } else {
+      await supa("config", {
+        method: "POST", prefer: "return=minimal",
+        body: JSON.stringify({ key: "goal_links", value: updated }),
+      });
+    }
+  },
+
   // Participants
   getParticipants: async () => {
     return await supa("participants?select=id,name,predictions,password&order=id.asc") || [];
@@ -135,6 +157,7 @@ export const db = {
       }),
     });
   },
+
   // Champion picks
   getChampionPicks: async () => {
     return await supa("champion_picks?select=participant_id,team,created_at") || [];
