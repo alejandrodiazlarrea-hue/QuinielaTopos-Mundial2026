@@ -60,7 +60,6 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
   const sortedScorers = [...scorers].sort((a,b) => b.goals - a.goals);
   const getScorerPos = (s) => [...new Set(sortedScorers.map(r => r.goals))].sort((a,b)=>b-a).indexOf(s.goals) + 1;
 
-  // Jornadas con partidos jugados en el grupo seleccionado
   const jornadasConPartidos = [1,2,3].filter(j =>
     ALL_MATCHES.some(m => m.group === selectedGroup && m.jornada === j && results[m.id]?.homeGoals != null)
   );
@@ -117,7 +116,6 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
             <div style={{ fontSize:11, color:"#555", marginTop:8 }}>🔴 Clasifican a Ronda de 32</div>
           </div>
 
-          {/* Mejores goles por jornada */}
           {jornadasConPartidos.map(j => {
             const key = `${selectedGroup}_${j}`;
             const link = goalLinks[key];
@@ -126,7 +124,7 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
                 <div style={{ fontSize:13, fontWeight:700, color:C.red, marginBottom:8 }}>
                   🥅 Mejor Gol — Grupo {selectedGroup} · J{j}
                 </div>
-                {isAdmin ? (
+                {isAdmin && (
                   <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
                     <input
                       style={{ ...inp, flex:1, minWidth:200, fontSize:12 }}
@@ -135,22 +133,25 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
                       onChange={e => setGoalLinkInputs(prev => ({ ...prev, [key]: e.target.value }))}
                     />
                     <button
-                      style={{ ...btn(savingLink===key?"success":"primary"), fontSize:12, padding:"6px 14px", minWidth:80 }}
+                      style={{ ...btn(savingLink===key ? "success" : "primary"), fontSize:12, padding:"6px 14px", minWidth:80 }}
                       onClick={() => handleSaveGoalLink(selectedGroup, j)}
                     >
                       {savingLink===key ? "✅ Guardado" : "Guardar"}
                     </button>
                   </div>
-                ) : null}
+                )}
                 {link ? (
                   
                     href={link}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                      display:"inline-flex", alignItems:"center", gap:8, marginTop: isAdmin ? 10 : 0,
-                      background:"rgba(233,69,96,0.12)", border:"1px solid rgba(233,69,96,0.4)",
-                      borderRadius:10, padding:"10px 16px", color:"#fff", textDecoration:"none",
+                      display:"inline-flex", alignItems:"center", gap:8,
+                      marginTop: isAdmin ? 10 : 0,
+                      background:"rgba(233,69,96,0.12)",
+                      border:"1px solid rgba(233,69,96,0.4)",
+                      borderRadius:10, padding:"10px 16px",
+                      color:"#fff", textDecoration:"none",
                       fontWeight:700, fontSize:14, cursor:"pointer",
                     }}
                   >
@@ -158,7 +159,9 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
                   </a>
                 ) : (
                   !isAdmin && (
-                    <div style={{ fontSize:12, color:"#444", marginTop:4 }}>Aún no hay gol destacado para esta jornada.</div>
+                    <div style={{ fontSize:12, color:"#444", marginTop:4 }}>
+                      Aún no hay gol destacado para esta jornada.
+                    </div>
                   )
                 )}
               </div>
@@ -230,7 +233,7 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
                   onUpsertScorer(editScorer ? {...scorerForm, id:editScorer} : scorerForm);
                   setScorerForm({player_name:"",team:"",goals:0});
                   setEditScorer(null);
-                }}>{editScorer?"Guardar":"Agregar"}</button>
+                }}>{editScorer ? "Guardar" : "Agregar"}</button>
                 {editScorer && <button style={btn("outline")} onClick={()=>{ setEditScorer(null); setScorerForm({player_name:"",team:"",goals:0}); }}>Cancelar</button>}
               </div>
             </div>
