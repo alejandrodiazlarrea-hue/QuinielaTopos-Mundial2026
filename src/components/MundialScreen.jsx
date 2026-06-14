@@ -60,9 +60,9 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
   const sortedScorers = [...scorers].sort((a,b) => b.goals - a.goals);
   const getScorerPos = (s) => [...new Set(sortedScorers.map(r => r.goals))].sort((a,b)=>b-a).indexOf(s.goals) + 1;
 
-  const jornadasConPartidos = [1,2,3].filter(j =>
-    ALL_MATCHES.some(m => m.group === selectedGroup && m.jornada === j && results[m.id]?.homeGoals != null)
-  );
+  const jornadasConPartidos = [1,2,3].filter(j => ALL_MATCHES.some(m => m.group === selectedGroup && m.jornada === j && results[m.id]?.homeGoals != null));
+
+  const golBtnStyle = { display:"inline-flex", alignItems:"center", gap:8, marginTop:8, background:"rgba(233,69,96,0.12)", border:"1px solid rgba(233,69,96,0.4)", borderRadius:10, padding:"10px 16px", color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer" };
 
   return (
     <div style={{ maxWidth:760, margin:"0 auto", padding:"20px 16px" }}>
@@ -78,10 +78,7 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
         <>
           <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:16 }}>
             {groups.map(g=>(
-              <button key={g} style={{...btn(selectedGroup===g?"primary":"outline-gray"), padding:"6px 14px", fontSize:13}}
-                onClick={()=>setSelectedGroup(g)}>
-                Grupo {g}
-              </button>
+              <button key={g} style={{...btn(selectedGroup===g?"primary":"outline-gray"), padding:"6px 14px", fontSize:13}} onClick={()=>setSelectedGroup(g)}>Grupo {g}</button>
             ))}
           </div>
 
@@ -102,9 +99,7 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
                       <td style={{ padding:"8px", textAlign:"center" }}>
                         <span style={{ color:posColors[i]||"#888", fontWeight:700 }}>{t.pos}</span>
                       </td>
-                      <td style={{ padding:"8px", fontWeight:600 }}>
-                        {FLAGS[t.name]||"🏳️"} {ABBR[t.name]||t.name}
-                      </td>
+                      <td style={{ padding:"8px", fontWeight:600 }}>{FLAGS[t.name]||"🏳️"} {ABBR[t.name]||t.name}</td>
                       {[t.pj,t.g,t.e,t.p,t.gf,t.gc,t.dg>=0?`+${t.dg}`:t.dg,t.pts].map((v,vi)=>(
                         <td key={vi} style={{ padding:"8px", textAlign:"center", fontWeight:vi===7?900:"normal", color:vi===7?C.red:"#ccc" }}>{v}</td>
                       ))}
@@ -121,49 +116,17 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
             const link = goalLinks[key];
             return (
               <div key={key} style={{ ...card, marginTop:12 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:C.red, marginBottom:8 }}>
-                  🥅 Mejor Gol — Grupo {selectedGroup} · J{j}
-                </div>
+                <div style={{ fontSize:13, fontWeight:700, color:C.red, marginBottom:8 }}>🥅 Mejor Gol — Grupo {selectedGroup} · J{j}</div>
                 {isAdmin && (
                   <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-                    <input
-                      style={{ ...inp, flex:1, minWidth:200, fontSize:12 }}
-                      placeholder="Pega el link de TikTok, YouTube, etc."
-                      value={goalLinkInputs[key] || ""}
-                      onChange={e => setGoalLinkInputs(prev => ({ ...prev, [key]: e.target.value }))}
-                    />
-                    <button
-                      style={{ ...btn(savingLink===key ? "success" : "primary"), fontSize:12, padding:"6px 14px", minWidth:80 }}
-                      onClick={() => handleSaveGoalLink(selectedGroup, j)}
-                    >
-                      {savingLink===key ? "✅ Guardado" : "Guardar"}
-                    </button>
+                    <input style={{ ...inp, flex:1, minWidth:200, fontSize:12 }} placeholder="Pega el link de TikTok, YouTube, etc." value={goalLinkInputs[key] || ""} onChange={e => setGoalLinkInputs(prev => ({ ...prev, [key]: e.target.value }))} />
+                    <button style={{ ...btn(savingLink===key ? "success" : "primary"), fontSize:12, padding:"6px 14px", minWidth:80 }} onClick={() => handleSaveGoalLink(selectedGroup, j)}>{savingLink===key ? "✅ Guardado" : "Guardar"}</button>
                   </div>
                 )}
-                {link ? (
-                  
-                    href={link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display:"inline-flex", alignItems:"center", gap:8,
-                      marginTop: isAdmin ? 10 : 0,
-                      background:"rgba(233,69,96,0.12)",
-                      border:"1px solid rgba(233,69,96,0.4)",
-                      borderRadius:10, padding:"10px 16px",
-                      color:"#fff", textDecoration:"none",
-                      fontWeight:700, fontSize:14, cursor:"pointer",
-                    }}
-                  >
-                    ▶ Ver gol
-                  </a>
-                ) : (
-                  !isAdmin && (
-                    <div style={{ fontSize:12, color:"#444", marginTop:4 }}>
-                      Aún no hay gol destacado para esta jornada.
-                    </div>
-                  )
-                )}
+                {link
+                  ? <button style={golBtnStyle} onClick={() => window.open(link, "_blank")}>▶ Ver gol</button>
+                  : !isAdmin && <div style={{ fontSize:12, color:"#444", marginTop:4 }}>Aún no hay gol destacado para esta jornada.</div>
+                }
               </div>
             );
           })}
@@ -198,14 +161,8 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
                       <td style={{ padding:"8px", textAlign:"right" }}>
                         {isAdmin && (
                           <div style={{ display:"flex", gap:4, justifyContent:"flex-end" }}>
-                            <button style={{ background:"#0f3460", border:"none", color:"#fff", borderRadius:6, padding:"4px 8px", cursor:"pointer", fontSize:12 }}
-                              onClick={()=>{ setEditScorer(s.id); setScorerForm({player_name:s.player_name,team:s.team,goals:s.goals}); }}>
-                              ✏️
-                            </button>
-                            <button style={{ background:"#7f1b1b", border:"none", color:"#fff", borderRadius:6, padding:"4px 8px", cursor:"pointer", fontSize:12 }}
-                              onClick={()=>onDeleteScorer(s.id)}>
-                              🗑️
-                            </button>
+                            <button style={{ background:"#0f3460", border:"none", color:"#fff", borderRadius:6, padding:"4px 8px", cursor:"pointer", fontSize:12 }} onClick={()=>{ setEditScorer(s.id); setScorerForm({player_name:s.player_name,team:s.team,goals:s.goals}); }}>✏️</button>
+                            <button style={{ background:"#7f1b1b", border:"none", color:"#fff", borderRadius:6, padding:"4px 8px", cursor:"pointer", fontSize:12 }} onClick={()=>onDeleteScorer(s.id)}>🗑️</button>
                           </div>
                         )}
                       </td>
@@ -218,22 +175,12 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
 
           {isAdmin && (
             <div style={{ marginTop:16, paddingTop:16, borderTop:"1px solid rgba(255,255,255,0.08)" }}>
-              <div style={{ fontSize:13, fontWeight:700, color:C.red, marginBottom:10 }}>
-                {editScorer ? "✏️ Editar goleador" : "➕ Agregar goleador"}
-              </div>
+              <div style={{ fontSize:13, fontWeight:700, color:C.red, marginBottom:10 }}>{editScorer ? "✏️ Editar goleador" : "➕ Agregar goleador"}</div>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                <input style={{...inp, flex:2, minWidth:120}} placeholder="Nombre del jugador"
-                  value={scorerForm.player_name} onChange={e=>setScorerForm(p=>({...p,player_name:e.target.value}))} />
-                <input style={{...inp, flex:1, minWidth:100}} placeholder="Selección (ej: 🇲🇽 MEX)"
-                  value={scorerForm.team} onChange={e=>setScorerForm(p=>({...p,team:e.target.value}))} />
-                <input style={{...inp, width:70}} type="number" min="0" placeholder="Goles"
-                  value={scorerForm.goals} onChange={e=>setScorerForm(p=>({...p,goals:Number(e.target.value)}))} />
-                <button style={btn()} onClick={()=>{
-                  if (!scorerForm.player_name.trim()) return;
-                  onUpsertScorer(editScorer ? {...scorerForm, id:editScorer} : scorerForm);
-                  setScorerForm({player_name:"",team:"",goals:0});
-                  setEditScorer(null);
-                }}>{editScorer ? "Guardar" : "Agregar"}</button>
+                <input style={{...inp, flex:2, minWidth:120}} placeholder="Nombre del jugador" value={scorerForm.player_name} onChange={e=>setScorerForm(p=>({...p,player_name:e.target.value}))} />
+                <input style={{...inp, flex:1, minWidth:100}} placeholder="Selección (ej: 🇲🇽 MEX)" value={scorerForm.team} onChange={e=>setScorerForm(p=>({...p,team:e.target.value}))} />
+                <input style={{...inp, width:70}} type="number" min="0" placeholder="Goles" value={scorerForm.goals} onChange={e=>setScorerForm(p=>({...p,goals:Number(e.target.value)}))} />
+                <button style={btn()} onClick={()=>{ if (!scorerForm.player_name.trim()) return; onUpsertScorer(editScorer ? {...scorerForm, id:editScorer} : scorerForm); setScorerForm({player_name:"",team:"",goals:0}); setEditScorer(null); }}>{editScorer ? "Guardar" : "Agregar"}</button>
                 {editScorer && <button style={btn("outline")} onClick={()=>{ setEditScorer(null); setScorerForm({player_name:"",team:"",goals:0}); }}>Cancelar</button>}
               </div>
             </div>
