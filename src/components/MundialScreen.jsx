@@ -60,7 +60,7 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
   const sortedScorers = [...scorers].sort((a,b) => b.goals - a.goals);
   const getScorerPos = (s) => [...new Set(sortedScorers.map(r => r.goals))].sort((a,b)=>b-a).indexOf(s.goals) + 1;
 
-  const jornadasConPartidos = [1,2,3].filter(j => ALL_MATCHES.some(m => m.group === selectedGroup && m.jornada === j && results[m.id]?.homeGoals != null));
+  const jornadasConPartidos = isAdmin ? [1,2,3] : [1,2,3].filter(j => goalLinks[`${selectedGroup}_${j}`]);
 
   const golBtnStyle = { display:"inline-flex", alignItems:"center", gap:8, marginTop:8, background:"rgba(233,69,96,0.12)", border:"1px solid rgba(233,69,96,0.4)", borderRadius:10, padding:"10px 16px", color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer" };
 
