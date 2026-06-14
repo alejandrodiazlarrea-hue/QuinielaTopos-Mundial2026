@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ALL_MATCHES, FLAGS, ABBR } from "../data/matches.js";
 import { C, card, sec, inp, btn } from "./ui.jsx";
+import { db } from "../lib/supabase.js";
 
 const buildGroupTable = (group, results) => {
   const matches = ALL_MATCHES.filter(m => m.group === group && results[m.id]?.homeGoals != null);
@@ -32,6 +33,25 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
   const [selectedGroup, setSelectedGroup] = useState("A");
   const [editScorer, setEditScorer] = useState(null);
   const [scorerForm, setScorerForm] = useState({ player_name:"", team:"", goals:0 });
+  const [goalLinks, setGoalLinks] = useState({});
+  const [goalLinkInputs, setGoalLinkInputs] = useState({});
+  const [savingLink, setSavingLink] = useState(null);
+
+  useEffect(() => {
+    db.getGoalLinks().then(links => {
+      setGoalLinks(links || {});
+      setGoalLinkInputs(links || {});
+    });
+  }, []);
+
+  const handleSaveGoalLink = async (group, jornada) => {
+    const key = `${group}_${jornada}`;
+    const url = goalLinkInputs[key] || "";
+    setSavingLink(key);
+    await db.setGoalLink(key, url);
+    setGoalLinks(prev => ({ ...prev, [key]: url }));
+    setTimeout(() => setSavingLink(null), 1500);
+  };
 
   const groups = [...new Set(ALL_MATCHES.map(m => m.group))].sort();
   const tableData = buildGroupTable(selectedGroup, results);
@@ -39,6 +59,11 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
 
   const sortedScorers = [...scorers].sort((a,b) => b.goals - a.goals);
   const getScorerPos = (s) => [...new Set(sortedScorers.map(r => r.goals))].sort((a,b)=>b-a).indexOf(s.goals) + 1;
+
+  // Jornadas con partidos jugados en el grupo seleccionado
+  const jornadasConPartidos = [1,2,3].filter(j =>
+    ALL_MATCHES.some(m => m.group === selectedGroup && m.jornada === j && results[m.id]?.homeGoals != null)
+  );
 
   return (
     <div style={{ maxWidth:760, margin:"0 auto", padding:"20px 16px" }}>
@@ -91,6 +116,54 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
             </div>
             <div style={{ fontSize:11, color:"#555", marginTop:8 }}>🔴 Clasifican a Ronda de 32</div>
           </div>
+
+          {/* Mejores goles por jornada */}
+          {jornadasConPartidos.map(j => {
+            const key = `${selectedGroup}_${j}`;
+            const link = goalLinks[key];
+            return (
+              <div key={key} style={{ ...card, marginTop:12 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:C.red, marginBottom:8 }}>
+                  🥅 Mejor Gol — Grupo {selectedGroup} · J{j}
+                </div>
+                {isAdmin ? (
+                  <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+                    <input
+                      style={{ ...inp, flex:1, minWidth:200, fontSize:12 }}
+                      placeholder="Pega el link de TikTok, YouTube, etc."
+                      value={goalLinkInputs[key] || ""}
+                      onChange={e => setGoalLinkInputs(prev => ({ ...prev, [key]: e.target.value }))}
+                    />
+                    <button
+                      style={{ ...btn(savingLink===key?"success":"primary"), fontSize:12, padding:"6px 14px", minWidth:80 }}
+                      onClick={() => handleSaveGoalLink(selectedGroup, j)}
+                    >
+                      {savingLink===key ? "✅ Guardado" : "Guardar"}
+                    </button>
+                  </div>
+                ) : null}
+                {link ? (
+                  
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display:"inline-flex", alignItems:"center", gap:8, marginTop: isAdmin ? 10 : 0,
+                      background:"rgba(233,69,96,0.12)", border:"1px solid rgba(233,69,96,0.4)",
+                      borderRadius:10, padding:"10px 16px", color:"#fff", textDecoration:"none",
+                      fontWeight:700, fontSize:14, cursor:"pointer",
+                    }}
+                  >
+                    ▶ Ver gol
+                  </a>
+                ) : (
+                  !isAdmin && (
+                    <div style={{ fontSize:12, color:"#444", marginTop:4 }}>Aún no hay gol destacado para esta jornada.</div>
+                  )
+                )}
+              </div>
+            );
+          })}
         </>
       )}
 
