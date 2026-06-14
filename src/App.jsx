@@ -130,13 +130,14 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
               const r=results[m.id]||{};
               const done=r.homeGoals!=null&&r.awayGoals!=null;
               return (
-                <div key={m.id} style={row}>
-                  <div style={{display:"flex",gap:4,flexShrink:0}}>
+                <div key={m.id} style={{...row,flexDirection:"column",alignItems:"stretch",gap:4}}>
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
                     <span style={pill("#1a1a2e")}>G{m.group}</span>
                     <span style={pill("#0f2d6e")}>J{m.jornada}</span>
-                    <span style={{fontSize:11,color:"#666",alignSelf:"center"}}>{m.time}</span>
+                    <span style={{fontSize:11,color:"#666"}}>{m.time}</span>
+                    {m.venue&&<span style={{fontSize:10,color:"#555"}}>📍 {m.venue}</span>}
                   </div>
-                  <div style={{flex:1,display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
                     <span style={{fontSize:13,color:"#ccc",fontWeight:600,minWidth:52,textAlign:"right"}}>{FLAGS[m.home]||"🏳️"} {ABBR[m.home]||m.home}</span>
                     <ScoreInput value={r.homeGoals} onChange={v=>handleResultChange(m.id,"homeGoals",v)}/>
                     <span style={{color:"#555",fontSize:12}}>-</span>
@@ -319,12 +320,13 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
                     const done=r&&r.homeGoals!=null&&r.awayGoals!=null;
                     const pts=done?calcScore(pred,r):null;
                     return (
-                      <div key={m.id} style={row}>
-                        <div style={{display:"flex",gap:4,flexShrink:0,alignItems:"center"}}>
+                      <div key={m.id} style={{...row,flexDirection:"column",alignItems:"stretch",gap:4}}>
+                        <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
                           <span style={pill("#0f2d6e")}>G{m.group}</span>
                           <span style={{fontSize:11,color:"#666"}}>{m.time}</span>
+                          {m.venue&&<span style={{fontSize:10,color:"#555"}}>📍 {m.venue}</span>}
                         </div>
-                        <div style={{flex:1,display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
                           <span style={{fontSize:13,color:"#ccc",fontWeight:600,minWidth:52,textAlign:"right"}}>{FLAGS[m.home]||"🏳️"} {ABBR[m.home]||m.home}</span>
                           <ScoreInput value={pred.home} onChange={v=>handlePredChange(m.id,"home",v)} disabled={done}/>
                           <span style={{color:"#555",fontSize:12}}>-</span>
@@ -353,10 +355,9 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
 
 const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,coins}) => {
   const medals=["🥇","🥈","🥉"];
-  const [tooltip, setTooltip] = useState(null); // {key, name, desc, coins, x, y}
+  const [tooltip, setTooltip] = useState(null);
   const maxPts=ranking[0]?.total||1;
   const jugados=Object.values(results).filter(r=>r.homeGoals!=null).length;
-  // True position: count how many people have strictly more points
   const getTruePos=(p)=>[...new Set(ranking.map(r=>r.total))].filter(pts=>pts>p.total).length+1;
 
   return (
@@ -400,7 +401,6 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
               </div>
             </div>
 
-            {/* Badges */}
             {Object.keys(badgeCounts).length>0&&(
               <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:10}}>
                 {Object.entries(badgeCounts).map(([key,count])=>{
@@ -423,7 +423,6 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
                 })}
               </div>
             )}
-            {/* Badge tooltip */}
             {tooltip&&Object.keys(badgeCounts).some(k=>k+p.id===tooltip.key)&&(
               <div onClick={()=>setTooltip(null)}
                 style={{marginTop:8,background:"#1a1a2e",border:`1px solid ${C.red}`,borderRadius:8,padding:"8px 12px",fontSize:12}}>
@@ -436,7 +435,6 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
               </div>
             )}
 
-            {/* Desglose por jornada */}
             <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
               {[1,2,3].map(j=>{
                 const jPts=ALL_MATCHES.filter(m=>m.jornada===j).reduce((acc,m)=>{
@@ -509,7 +507,7 @@ const PronosticosScreen = ({participants,results}) => {
             const hasResult=r.homeGoals!=null&&r.awayGoals!=null;
             return (
               <div key={m.id} style={{...card,padding:"12px 16px",marginBottom:8}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
                   <span style={pill("#0f2d6e")}>G{m.group}</span>
                   <span style={{fontSize:12,color:"#666"}}>{m.time}</span>
                   <span style={{flex:1,textAlign:"center",fontWeight:700,fontSize:14}}>
@@ -517,6 +515,7 @@ const PronosticosScreen = ({participants,results}) => {
                   </span>
                   {hasResult&&<span style={{...pill("#1b7f4a"),fontSize:11}}>Final</span>}
                 </div>
+                {m.venue&&<div style={{fontSize:11,color:"#555",marginBottom:8}}>📍 {m.venue}</div>}
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                   {participants.map(p=>{
                     const pred=(p.predictions||{})[m.id];
@@ -684,27 +683,18 @@ export default function QuinielaMundial() {
     flash("✅ Quiniela guardada");
   },[activeParticipantId,currentPreds]);
 
-  // Calculate badges for a jornada
   const handleCalcBadges=useCallback(async(jornada)=>{
     flash("⏳ Calculando badges...");
-    // Delete existing badges for this jornada first
     await db.deleteBadgesByJornada(jornada);
-    // Calculate new badges
     const awarded=calcBadgesForJornada(jornada,participants,results);
-    // Insert all badges
     for(const {participantId,badgeKey} of awarded){
       await db.insertBadge(participantId,badgeKey,jornada);
     }
-    // Calculate coins per participant
     const allBadges=await db.getBadges();
     setEarnedBadges(allBadges);
-    // Recalc coins for all participants
-    // Strategy: get current total, subtract old badge coins, add new badge coins
-    // This preserves quiz coins which are added separately
     for(const p of participants){
       const pBadgeKeys=allBadges.filter(b=>b.participant_id===p.id).map(b=>b.badge_key);
       const badgeCoins=calcCoinsFromBadges(pBadgeKeys);
-      // Get quiz coins by summing quiz_answers coins_earned for this participant
       const quizRows=await db.getQuizAnswersByParticipant(p.id);
       const quizCoins=[...new Set(quizRows.map(r=>r.quiz_label))].reduce((sum,label)=>{
         const labelRows=quizRows.filter(r=>r.quiz_label===label);
@@ -718,7 +708,6 @@ export default function QuinielaMundial() {
     flash(`✅ Badges de Jornada ${jornada} calculados`);
   },[participants,results,coins]);
 
-  // Quiz open/close
   const handleQuizToggle=useCallback(async(label)=>{
     const updated=quizOpenDates.includes(label)
       ? quizOpenDates.filter(d=>d!==label)
@@ -728,7 +717,6 @@ export default function QuinielaMundial() {
     flash(updated.includes(label)?`✅ Quiz ${label} abierto`:`🔒 Quiz ${label} cerrado`);
   },[quizOpenDates]);
 
-  // Rename participant
   const handleRenameParticipant=useCallback(async(id, newName)=>{
     if(!newName.trim()) return;
     if(participants.find(p=>p.name.toLowerCase()===newName.toLowerCase()&&p.id!==id)){
@@ -740,7 +728,6 @@ export default function QuinielaMundial() {
     flash("✅ Nombre actualizado");
   },[participants]);
 
-  // Quiz save
   const handleChampionPick = async (team) => {
     if (!activeParticipantId) return;
     await db.setChampionPick(activeParticipantId, team);
@@ -756,11 +743,9 @@ export default function QuinielaMundial() {
     const perfectBonus = answers.every(a=>a.isCorrect) ? 20 : 0;
     for(let i=0;i<answers.length;i++){
       const ans=answers[i];
-      // Add perfect bonus to last answer so it's preserved in quiz_answers
       const coinsToSave = i===answers.length-1 ? ans.coinsEarned+perfectBonus : ans.coinsEarned;
       await db.insertQuizAnswer(activeParticipantId,ans.questionId,date,ans.selectedIndex,ans.isCorrect,coinsToSave,quizLabel);
     }
-    // Add quiz coins
     const current=coins.find(c=>c.participant_id===activeParticipantId)?.total||0;
     await db.upsertCoins(activeParticipantId,current+coinsEarned);
     const newCoins=await db.getCoins();
@@ -768,7 +753,6 @@ export default function QuinielaMundial() {
     if(activeParticipantId) db.getQuizAnswersByParticipant(activeParticipantId).then(ans=>setMyQuizAnswers(ans||[]));
   },[activeParticipantId,coins]);
 
-  // Scorers
   const handleUpsertScorer=useCallback(async(scorer)=>{
     await db.upsertScorer(scorer);
     const updated=await db.getScorers();
@@ -824,7 +808,6 @@ export default function QuinielaMundial() {
 
   return (
     <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${C.bg} 0%,#0f1932 50%,${C.bg} 100%)`,fontFamily:"'Segoe UI',system-ui,sans-serif",color:"#e8e8f0"}}>
-
       {modal&&(
         modal.type==="new"?(
           <PasswordModal participant={modal.participant} isNew={true}
