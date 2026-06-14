@@ -826,14 +826,14 @@ export default function QuinielaMundial() {
           <button style={navBtn(screen==="home")} onClick={()=>setScreen("home")}>Inicio</button>
         </div>
         <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-          {activeParticipant&&<button style={navBtn(screen==="participant")} onClick={()=>setScreen("participant")}>Mi Quiniela</button>}
-          {activeParticipant&&<button style={navBtn(screen==="perfil")} onClick={()=>setScreen("perfil")}>👤 Perfil</button>}
           <button style={navBtn(screen==="ranking")} onClick={()=>setScreen("ranking")}>🏆 Ranking</button>
           <button style={navBtn(screen==="pronosticos")} onClick={()=>setScreen("pronosticos")}>📋 Pronósticos</button>
-          <button style={navBtn(screen==="badges")} onClick={()=>setScreen("badges")}>🏅 Badges</button>
+          {activeParticipant&&<button style={navBtn(screen==="participant")} onClick={()=>setScreen("participant")}>Mi Quiniela</button>}
           <button style={navBtn(screen==="mundial")} onClick={()=>setScreen("mundial")}>🌎 Mundial</button>
-          <button style={navBtn(screen==="tendencias")} onClick={()=>setScreen("tendencias")}>🔮 Tendencias</button>
           <button style={navBtn(screen==="quiz")} onClick={()=>setScreen("quiz")}>🧠 Quiz</button>
+          <button style={navBtn(screen==="tendencias")} onClick={()=>setScreen("tendencias")}>🔮 Tendencias</button>
+          <button style={navBtn(screen==="badges")} onClick={()=>setScreen("badges")}>🏅 Badges</button>
+          {activeParticipant&&<button style={navBtn(screen==="perfil")} onClick={()=>setScreen("perfil")}>👤 Perfil</button>}
           {adminAuth&&<button style={navBtn(screen==="admin")} onClick={()=>setScreen("admin")}>⚙️ Admin</button>}
         </div>
       </div>
