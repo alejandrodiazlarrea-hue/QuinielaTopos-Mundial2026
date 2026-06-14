@@ -33,7 +33,7 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
   const [editScorer, setEditScorer] = useState(null);
   const [scorerForm, setScorerForm] = useState({ player_name:"", team:"", goals:0 });
 
-  const groups = [...new Set(ALL_MATCHES.map(m => m.group))];
+  const groups = [...new Set(ALL_MATCHES.map(m => m.group))].sort();
   const tableData = buildGroupTable(selectedGroup, results);
   const posColors = ["#ffd700","#c0c0c0","#cd7f32",""];
 
