@@ -46,10 +46,13 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
 
   const handleSaveGoalLink = async (group, jornada) => {
     const key = `${group}_${jornada}`;
+    const descKey = `${group}_${jornada}_desc`;
     const url = goalLinkInputs[key] || "";
+    const desc = goalLinkInputs[descKey] || "";
     setSavingLink(key);
     await db.setGoalLink(key, url);
-    setGoalLinks(prev => ({ ...prev, [key]: url }));
+    await db.setGoalLink(descKey, desc);
+    setGoalLinks(prev => ({ ...prev, [key]: url, [descKey]: desc }));
     setTimeout(() => setSavingLink(null), 1500);
   };
 
@@ -113,20 +116,33 @@ export const MundialScreen = ({ results, scorers, onUpsertScorer, onDeleteScorer
 
           {jornadasConPartidos.map(j => {
             const key = `${selectedGroup}_${j}`;
+            const descKey = `${selectedGroup}_${j}_desc`;
             const link = goalLinks[key];
+            const desc = goalLinks[descKey];
             return (
               <div key={key} style={{ ...card, marginTop:12 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:C.red, marginBottom:8 }}>🥅 Mejor Gol — Grupo {selectedGroup} · J{j}</div>
                 {isAdmin && (
-                  <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-                    <input style={{ ...inp, flex:1, minWidth:200, fontSize:12 }} placeholder="Pega el link de TikTok, YouTube, etc." value={goalLinkInputs[key] || ""} onChange={e => setGoalLinkInputs(prev => ({ ...prev, [key]: e.target.value }))} />
-                    <button style={{ ...btn(savingLink===key ? "success" : "primary"), fontSize:12, padding:"6px 14px", minWidth:80 }} onClick={() => handleSaveGoalLink(selectedGroup, j)}>{savingLink===key ? "✅ Guardado" : "Guardar"}</button>
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    <input style={{ ...inp, fontSize:12 }} placeholder="Pega el link de TikTok, YouTube, etc." value={goalLinkInputs[key] || ""} onChange={e => setGoalLinkInputs(prev => ({ ...prev, [key]: e.target.value }))} />
+                    <textarea
+                      style={{ ...inp, fontSize:12, minHeight:64, resize:"vertical", fontFamily:"inherit" }}
+                      placeholder="Descripción del gol (jugador, minuto, partido, etc.)"
+                      value={goalLinkInputs[descKey] || ""}
+                      onChange={e => setGoalLinkInputs(prev => ({ ...prev, [descKey]: e.target.value }))}
+                    />
+                    <button style={{ ...btn(savingLink===key ? "success" : "primary"), fontSize:12, padding:"6px 14px", alignSelf:"flex-start" }} onClick={() => handleSaveGoalLink(selectedGroup, j)}>{savingLink===key ? "✅ Guardado" : "Guardar"}</button>
                   </div>
                 )}
-                {link
-                  ? <button style={golBtnStyle} onClick={() => window.open(link, "_blank")}>▶ Ver gol</button>
-                  : !isAdmin && <div style={{ fontSize:12, color:"#444", marginTop:4 }}>Aún no hay gol destacado para esta jornada.</div>
-                }
+                {(link || desc) && (
+                  <div style={{ marginTop: isAdmin ? 12 : 0 }}>
+                    {desc && <div style={{ fontSize:13, color:"#ccc", marginBottom:8, lineHeight:1.5 }}>{desc}</div>}
+                    {link && <button style={golBtnStyle} onClick={() => window.open(link, "_blank")}>▶ Ver gol</button>}
+                  </div>
+                )}
+                {!link && !desc && !isAdmin && (
+                  <div style={{ fontSize:12, color:"#444", marginTop:4 }}>Aún no hay gol destacado para esta jornada.</div>
+                )}
               </div>
             );
           })}
