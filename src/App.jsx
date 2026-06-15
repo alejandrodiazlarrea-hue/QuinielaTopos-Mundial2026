@@ -81,7 +81,6 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
         <Flash msg={savedMsg}/>
       </div>
 
-      {/* Jornadas */}
       <div style={card}>
         <div style={sec}>Control de Jornadas</div>
         <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
@@ -93,13 +92,9 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
                 <div style={{fontSize:10,color:"#666",marginBottom:6}}>{dates[j]}</div>
                 <div style={{fontSize:11,color:openJornadas[j]?"#4ade80":"#888",marginBottom:8}}>{openJornadas[j]?"🟢 ABIERTA":"🔴 CERRADA"}</div>
                 <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                  <button style={btn(openJornadas[j]?"success":"outline")} onClick={()=>toggleJornada(j)}>
-                    {openJornadas[j]?"Cerrar":"Abrir"}
-                  </button>
+                  <button style={btn(openJornadas[j]?"success":"outline")} onClick={()=>toggleJornada(j)}>{openJornadas[j]?"Cerrar":"Abrir"}</button>
                   {!openJornadas[j]&&(
-                    <button style={{...btn("outline-gray"),fontSize:12,padding:"6px 10px"}} onClick={()=>handleCalcBadges(j)}>
-                      🏅 Calcular badges J{j}
-                    </button>
+                    <button style={{...btn("outline-gray"),fontSize:12,padding:"6px 10px"}} onClick={()=>handleCalcBadges(j)}>🏅 Calcular badges J{j}</button>
                   )}
                 </div>
               </div>
@@ -108,7 +103,6 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
         </div>
       </div>
 
-      {/* Resultados */}
       <div style={card}>
         <div style={sec}>Capturar Resultados</div>
         <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
@@ -152,7 +146,6 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
         ))}
       </div>
 
-      {/* Quiz management */}
       <div style={card}>
         <div style={sec}>🧠 Control de Quizzes</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
@@ -172,7 +165,6 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
         <div style={{fontSize:12,color:"#888"}}>Click en un quiz para abrirlo o cerrarlo. Verde = abierto.</div>
       </div>
 
-      {/* Contraseña */}
       <div style={card}>
         <div style={sec}>Cambiar Contraseña Admin</div>
         <div style={{display:"flex",gap:8}}>
@@ -181,7 +173,6 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
         </div>
       </div>
 
-      {/* Participantes */}
       <div style={card}>
         <div style={sec}>Participantes ({participants.length})</div>
         {participants.length===0
@@ -196,28 +187,22 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
                       onChange={e=>setNewNameInput(e.target.value)}
                       onKeyDown={e=>{if(e.key==="Enter"){handleRenameParticipant(p.id,newNameInput);setEditingName(null);}}}
                       autoFocus/>
-                    <button onClick={()=>{handleRenameParticipant(p.id,newNameInput);setEditingName(null);}}
-                      style={{background:"#1b7f4a",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>✓</button>
-                    <button onClick={()=>setEditingName(null)}
-                      style={{background:"#333",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>✕</button>
+                    <button onClick={()=>{handleRenameParticipant(p.id,newNameInput);setEditingName(null);}} style={{background:"#1b7f4a",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>✓</button>
+                    <button onClick={()=>setEditingName(null)} style={{background:"#333",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>✕</button>
                   </div>
                 ):(
                   <>
                     <span style={{fontWeight:600,flex:1}}>{p.name}</span>
                     <span style={{color:C.red,fontWeight:700,minWidth:50,textAlign:"right"}}>{pr?.total??0} pts</span>
-                    <button onClick={()=>{setEditingName(p.id);setNewNameInput(p.name);}}
-                      style={{background:"transparent",border:"1px solid #444",color:"#888",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12}}>✏️</button>
+                    <button onClick={()=>{setEditingName(p.id);setNewNameInput(p.name);}} style={{background:"transparent",border:"1px solid #444",color:"#888",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12}}>✏️</button>
                     {confirmDelete===p.id?(
                       <div style={{display:"flex",gap:6,alignItems:"center"}}>
                         <span style={{fontSize:12,color:"#f87171"}}>¿Eliminar?</span>
-                        <button onClick={()=>{handleDeleteParticipant(p.id);setConfirmDelete(null);}}
-                          style={{background:"#7f1b1b",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>Sí</button>
-                        <button onClick={()=>setConfirmDelete(null)}
-                          style={{background:"#333",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>No</button>
+                        <button onClick={()=>{handleDeleteParticipant(p.id);setConfirmDelete(null);}} style={{background:"#7f1b1b",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>Sí</button>
+                        <button onClick={()=>setConfirmDelete(null)} style={{background:"#333",border:"none",color:"#fff",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>No</button>
                       </div>
                     ):(
-                      <button onClick={()=>setConfirmDelete(p.id)}
-                        style={{background:"transparent",border:"1px solid #444",color:"#888",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>🗑️</button>
+                      <button onClick={()=>setConfirmDelete(p.id)} style={{background:"transparent",border:"1px solid #444",color:"#888",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>🗑️</button>
                     )}
                   </>
                 )}
@@ -252,12 +237,9 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
             {openJs.length>0?`Jornada(s) disponible(s): ${openJs.map(j=>"J"+j).join(", ")}`:"No hay jornadas abiertas."}
           </div>
         </div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <Flash msg={savedMsg}/>
-        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}><Flash msg={savedMsg}/></div>
       </div>
 
-      {/* Mini stats */}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         <div style={{...card,flex:1,padding:"12px",textAlign:"center",marginBottom:0}}>
           <div style={{fontSize:20,fontWeight:900,color:C.red}}>{ranking.find(r=>r.id===activeParticipantId)?.total||0}</div>
@@ -273,7 +255,6 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
         </div>
       </div>
 
-      {/* Badges */}
       {myBadges.length>0&&(
         <div style={{...card,padding:"12px 16px"}}>
           <div style={{fontSize:12,fontWeight:700,color:C.red,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Mis Badges</div>
@@ -282,8 +263,7 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
               const def=BADGE_DEFS[key];
               if(!def) return null;
               return (
-                <div key={key} title={`${def.name}: ${def.desc}`}
-                  style={{background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"4px 8px",textAlign:"center",fontSize:18}}>
+                <div key={key} title={`${def.name}: ${def.desc}`} style={{background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"4px 8px",textAlign:"center",fontSize:18}}>
                   {def.emoji}{count>1&&<sup style={{fontSize:10,color:C.red}}>x{count}</sup>}
                 </div>
               );
@@ -306,8 +286,7 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
             <div key={j} style={card}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
                 <div style={sec}>Jornada {j} <span style={{color:"#555",fontSize:11,letterSpacing:0}}>· {dateLabelRange[j]}</span></div>
-                <button style={{...btn(savedJ===j?"success":"primary"),padding:"6px 14px",fontSize:13,transition:"all .3s",minWidth:100}}
-                  onClick={()=>handleSave(j)}>
+                <button style={{...btn(savedJ===j?"success":"primary"),padding:"6px 14px",fontSize:13,transition:"all .3s",minWidth:100}} onClick={()=>handleSave(j)}>
                   {savedJ===j?"✅ Guardado":`Guardar J${j}`}
                 </button>
               </div>
@@ -333,7 +312,7 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
                           <ScoreInput value={pred.away} onChange={v=>handlePredChange(m.id,"away",v)} disabled={done}/>
                           <span style={{fontSize:13,color:"#ccc",fontWeight:600,minWidth:52}}>{ABBR[m.away]||m.away} {FLAGS[m.away]||"🏳️"}</span>
                           {done&&pts!==null&&(
-                            <span style={{...pill(pts===3?"#1b7f4a":pts===0?"#7f1b1b":"#7f5a00"),minWidth:36,textAlign:"center"}}>
+                            <span style={{...pill(pts===4?"#1b7f4a":pts===0?"#7f1b1b":"#7f5a00"),minWidth:36,textAlign:"center"}}>
                               {pts}pt{pts!==1?"s":""}
                             </span>
                           )}
@@ -363,7 +342,7 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
   return (
     <div style={{maxWidth:600,margin:"0 auto",padding:"20px 16px"}}>
       <div style={{fontSize:22,fontWeight:900,marginBottom:4}}>🏆 Tabla <span style={{color:C.red}}>General</span></div>
-      <div style={{fontSize:12,color:"#888",marginBottom:20}}>1pt ganador/empate · 1pt goles local · 1pt goles visitante</div>
+      <div style={{fontSize:12,color:"#888",marginBottom:20}}>2pts ganador/empate · 1pt goles local · 1pt goles visitante</div>
 
       {ranking.length===0?(
         <div style={{...card,textAlign:"center",padding:40}}>
@@ -408,15 +387,9 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
                   if(!def) return null;
                   const isActive=tooltip?.key===key+p.id;
                   return (
-                    <span key={key}
-                      title={`${def.name}: ${def.desc}`}
-                      onClick={(e)=>{
-                        e.stopPropagation();
-                        setTooltip(isActive?null:{key:key+p.id,name:def.name,desc:def.desc,coins:def.coins,emoji:def.emoji});
-                      }}
-                      style={{fontSize:18,cursor:"pointer",position:"relative",
-                        background:isActive?"rgba(233,69,96,0.15)":"transparent",
-                        borderRadius:6,padding:"2px 4px"}}>
+                    <span key={key} title={`${def.name}: ${def.desc}`}
+                      onClick={(e)=>{ e.stopPropagation(); setTooltip(isActive?null:{key:key+p.id,name:def.name,desc:def.desc,coins:def.coins,emoji:def.emoji}); }}
+                      style={{fontSize:18,cursor:"pointer",position:"relative",background:isActive?"rgba(233,69,96,0.15)":"transparent",borderRadius:6,padding:"2px 4px"}}>
                       {def.emoji}{count>1&&<sup style={{fontSize:9,color:C.red}}>x{count}</sup>}
                     </span>
                   );
@@ -424,13 +397,10 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
               </div>
             )}
             {tooltip&&Object.keys(badgeCounts).some(k=>k+p.id===tooltip.key)&&(
-              <div onClick={()=>setTooltip(null)}
-                style={{marginTop:8,background:"#1a1a2e",border:`1px solid ${C.red}`,borderRadius:8,padding:"8px 12px",fontSize:12}}>
+              <div onClick={()=>setTooltip(null)} style={{marginTop:8,background:"#1a1a2e",border:`1px solid ${C.red}`,borderRadius:8,padding:"8px 12px",fontSize:12}}>
                 <div style={{fontWeight:700,fontSize:14}}>{tooltip.emoji} {tooltip.name}</div>
                 <div style={{color:"#888",marginTop:3}}>{tooltip.desc}</div>
-                <div style={{color:tooltip.coins>0?"#4ade80":"#f87171",fontWeight:700,marginTop:4}}>
-                  {tooltip.coins>0?`+${tooltip.coins}`:tooltip.coins} 🪙
-                </div>
+                <div style={{color:tooltip.coins>0?"#4ade80":"#f87171",fontWeight:700,marginTop:4}}>{tooltip.coins>0?`+${tooltip.coins}`:tooltip.coins} 🪙</div>
                 <div style={{color:"#555",fontSize:10,marginTop:4}}>Toca para cerrar</div>
               </div>
             )}
@@ -490,9 +460,7 @@ const PronosticosScreen = ({participants,results}) => {
       <div style={{fontSize:12,color:"#888",marginBottom:16}}>Pronósticos de todos los participantes</div>
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
         {[1,2,3].map(j=>(
-          <button key={j} style={{...btn(jFilter===j?"primary":"outline"),padding:"8px 16px",fontSize:13}} onClick={()=>setJFilter(j)}>
-            Jornada {j}
-          </button>
+          <button key={j} style={{...btn(jFilter===j?"primary":"outline"),padding:"8px 16px",fontSize:13}} onClick={()=>setJFilter(j)}>Jornada {j}</button>
         ))}
         <select style={{...inp,width:"auto"}} value={gFilter} onChange={e=>setGFilter(e.target.value)}>
           <option value="Todos">Todos los grupos</option>
@@ -523,16 +491,14 @@ const PronosticosScreen = ({participants,results}) => {
                     const hasPred=pred&&pred.home!=null&&pred.away!=null;
                     return (
                       <div key={p.id} style={{
-                        background:pts===3?"rgba(27,127,74,0.2)":pts===0&&hasResult?"rgba(127,27,27,0.2)":"rgba(255,255,255,0.05)",
-                        border:`1px solid ${pts===3?"#1b7f4a":pts===0&&hasResult?"#7f1b1b":"#333"}`,
+                        background:pts===4?"rgba(27,127,74,0.2)":pts===0&&hasResult?"rgba(127,27,27,0.2)":"rgba(255,255,255,0.05)",
+                        border:`1px solid ${pts===4?"#1b7f4a":pts===0&&hasResult?"#7f1b1b":"#333"}`,
                         borderRadius:8,padding:"6px 10px",minWidth:80,textAlign:"center"
                       }}>
                         <div style={{fontSize:11,color:"#888",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:80}}>{p.name}</div>
-                        <div style={{fontWeight:700,fontSize:14}}>
-                          {hasPred?`${pred.home}-${pred.away}`:<span style={{color:"#555"}}>—</span>}
-                        </div>
+                        <div style={{fontWeight:700,fontSize:14}}>{hasPred?`${pred.home}-${pred.away}`:<span style={{color:"#555"}}>—</span>}</div>
                         {pts!==null&&(
-                          <div style={{fontSize:10,color:pts===3?"#4ade80":pts===0?"#f87171":"#fbbf24",fontWeight:700,marginTop:2}}>
+                          <div style={{fontSize:10,color:pts===4?"#4ade80":pts===0?"#f87171":"#fbbf24",fontWeight:700,marginTop:2}}>
                             {pts}pt{pts!==1?"s":""}
                           </div>
                         )}
@@ -639,9 +605,7 @@ export default function QuinielaMundial() {
     flash("✅ Contraseña actualizada");
   },[newAdminPass]);
 
-  const handleSelectParticipant=useCallback((p)=>{
-    setModal({type:"login",participant:p});
-  },[]);
+  const handleSelectParticipant=useCallback((p)=>{ setModal({type:"login",participant:p}); },[]);
 
   const handleNewParticipant=useCallback(()=>{
     const name=participantName.trim();
@@ -709,41 +673,36 @@ export default function QuinielaMundial() {
   },[participants,results,coins]);
 
   const handleQuizToggle=useCallback(async(label)=>{
-    const updated=quizOpenDates.includes(label)
-      ? quizOpenDates.filter(d=>d!==label)
-      : [...quizOpenDates, label];
+    const updated=quizOpenDates.includes(label)?quizOpenDates.filter(d=>d!==label):[...quizOpenDates,label];
     setQuizOpenDates(updated);
     await db.setQuizOpenDates(updated);
     flash(updated.includes(label)?`✅ Quiz ${label} abierto`:`🔒 Quiz ${label} cerrado`);
   },[quizOpenDates]);
 
-  const handleRenameParticipant=useCallback(async(id, newName)=>{
+  const handleRenameParticipant=useCallback(async(id,newName)=>{
     if(!newName.trim()) return;
-    if(participants.find(p=>p.name.toLowerCase()===newName.toLowerCase()&&p.id!==id)){
-      flash("⚠️ Ese nombre ya existe");
-      return;
-    }
-    await db.updateParticipantName(id, newName.trim());
+    if(participants.find(p=>p.name.toLowerCase()===newName.toLowerCase()&&p.id!==id)){flash("⚠️ Ese nombre ya existe");return;}
+    await db.updateParticipantName(id,newName.trim());
     setParticipants(prev=>prev.map(p=>p.id===id?{...p,name:newName.trim()}:p));
     flash("✅ Nombre actualizado");
   },[participants]);
 
-  const handleChampionPick = async (team) => {
-    if (!activeParticipantId) return;
-    await db.setChampionPick(activeParticipantId, team);
-    const updated = await db.getChampionPicks();
-    setChampionPicks(updated || []);
+  const handleChampionPick=async(team)=>{
+    if(!activeParticipantId) return;
+    await db.setChampionPick(activeParticipantId,team);
+    const updated=await db.getChampionPicks();
+    setChampionPicks(updated||[]);
   };
 
   const handleSaveQuizAnswers=useCallback(async(answers,coinsEarned,label)=>{
     if(!activeParticipantId) return;
     const today=new Date();
-    const date=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const date=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
     const quizLabel=label||date;
-    const perfectBonus = answers.every(a=>a.isCorrect) ? 20 : 0;
+    const perfectBonus=answers.every(a=>a.isCorrect)?20:0;
     for(let i=0;i<answers.length;i++){
       const ans=answers[i];
-      const coinsToSave = i===answers.length-1 ? ans.coinsEarned+perfectBonus : ans.coinsEarned;
+      const coinsToSave=i===answers.length-1?ans.coinsEarned+perfectBonus:ans.coinsEarned;
       await db.insertQuizAnswer(activeParticipantId,ans.questionId,date,ans.selectedIndex,ans.isCorrect,coinsToSave,quizLabel);
     }
     const current=coins.find(c=>c.participant_id===activeParticipantId)?.total||0;
@@ -769,10 +728,7 @@ export default function QuinielaMundial() {
     ALL_MATCHES.forEach(m=>{
       const r=results[m.id];
       const pred=(p.predictions||{})[m.id];
-      if(r&&r.homeGoals!=null&&pred){
-        const pts=calcScore(pred,r);
-        if(pts!=null){total+=pts;played++;}
-      }
+      if(r&&r.homeGoals!=null&&pred){const pts=calcScore(pred,r);if(pts!=null){total+=pts;played++;}}
     });
     return {...p,total,played};
   }).sort((a,b)=>b.total-a.total);
@@ -793,25 +749,24 @@ export default function QuinielaMundial() {
     borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:12,fontWeight:600,whiteSpace:"nowrap",
   });
 
-  const screens = {
-    home: <HomeScreen participants={participants} adminAuth={adminAuth} participantName={participantName} setParticipantName={setParticipantName} passInput={passInput} setPassInput={setPassInput} passError={passError} handleNewParticipant={handleNewParticipant} handleAdminLogin={handleAdminLogin} handleSelectParticipant={handleSelectParticipant} setScreen={setScreen} openJornadas={openJornadas}/>,
-    admin: <AdminScreen participants={participants} results={results} openJornadas={openJornadas} savedMsg={savedMsg} handleResultChange={handleResultChange} toggleJornada={toggleJornada} newAdminPass={newAdminPass} setNewAdminPass={setNewAdminPass} handleChangePass={handleChangePass} ranking={ranking} handleDeleteParticipant={handleDeleteParticipant} handleCalcBadges={handleCalcBadges} quizOpenDates={quizOpenDates} handleQuizToggle={handleQuizToggle} handleRenameParticipant={handleRenameParticipant}/>,
-    participant: <ParticipantScreen activeParticipant={activeParticipant} openJornadas={openJornadas} results={results} currentPreds={currentPreds} handlePredChange={handlePredChange} savePredictions={savePredictions} savedMsg={savedMsg} ranking={ranking} activeParticipantId={activeParticipantId} earnedBadges={earnedBadges} coins={coins}/>,
-    ranking: <RankingScreen ranking={ranking} results={results} participants={participants} openJornadas={openJornadas} earnedBadges={earnedBadges} coins={coins}/>,
-    pronosticos: <PronosticosScreen participants={participants} results={results}/>,
-    badges: <BadgesScreen participants={participants} earnedBadges={earnedBadges}/>,
-    mundial: <MundialScreen results={results} scorers={scorers} onUpsertScorer={handleUpsertScorer} onDeleteScorer={handleDeleteScorer} isAdmin={adminAuth}/>,
-    tendencias: <TendenciasScreen participants={participants} results={results} openJornadas={openJornadas} championPicks={championPicks} activeParticipantId={activeParticipantId} onChampionPick={handleChampionPick}/>,
-    quiz: <QuizScreen participant={activeParticipant} openQuizDates={quizOpenDates} onSaveAnswers={handleSaveQuizAnswers}/>,
-    perfil: <ProfileScreen participant={activeParticipant} results={results} earnedBadges={earnedBadges} coins={coins} quizAnswers={myQuizAnswers}/>,
+  const screens={
+    home:<HomeScreen participants={participants} adminAuth={adminAuth} participantName={participantName} setParticipantName={setParticipantName} passInput={passInput} setPassInput={setPassInput} passError={passError} handleNewParticipant={handleNewParticipant} handleAdminLogin={handleAdminLogin} handleSelectParticipant={handleSelectParticipant} setScreen={setScreen} openJornadas={openJornadas}/>,
+    admin:<AdminScreen participants={participants} results={results} openJornadas={openJornadas} savedMsg={savedMsg} handleResultChange={handleResultChange} toggleJornada={toggleJornada} newAdminPass={newAdminPass} setNewAdminPass={setNewAdminPass} handleChangePass={handleChangePass} ranking={ranking} handleDeleteParticipant={handleDeleteParticipant} handleCalcBadges={handleCalcBadges} quizOpenDates={quizOpenDates} handleQuizToggle={handleQuizToggle} handleRenameParticipant={handleRenameParticipant}/>,
+    participant:<ParticipantScreen activeParticipant={activeParticipant} openJornadas={openJornadas} results={results} currentPreds={currentPreds} handlePredChange={handlePredChange} savePredictions={savePredictions} savedMsg={savedMsg} ranking={ranking} activeParticipantId={activeParticipantId} earnedBadges={earnedBadges} coins={coins}/>,
+    ranking:<RankingScreen ranking={ranking} results={results} participants={participants} openJornadas={openJornadas} earnedBadges={earnedBadges} coins={coins}/>,
+    pronosticos:<PronosticosScreen participants={participants} results={results}/>,
+    badges:<BadgesScreen participants={participants} earnedBadges={earnedBadges}/>,
+    mundial:<MundialScreen results={results} scorers={scorers} onUpsertScorer={handleUpsertScorer} onDeleteScorer={handleDeleteScorer} isAdmin={adminAuth}/>,
+    tendencias:<TendenciasScreen participants={participants} results={results} openJornadas={openJornadas} championPicks={championPicks} activeParticipantId={activeParticipantId} onChampionPick={handleChampionPick}/>,
+    quiz:<QuizScreen participant={activeParticipant} openQuizDates={quizOpenDates} onSaveAnswers={handleSaveQuizAnswers}/>,
+    perfil:<ProfileScreen participant={activeParticipant} results={results} earnedBadges={earnedBadges} coins={coins} quizAnswers={myQuizAnswers}/>,
   };
 
   return (
     <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${C.bg} 0%,#0f1932 50%,${C.bg} 100%)`,fontFamily:"'Segoe UI',system-ui,sans-serif",color:"#e8e8f0"}}>
       {modal&&(
         modal.type==="new"?(
-          <PasswordModal participant={modal.participant} isNew={true}
-            onSuccess={handleNewWithPassword} onCancel={()=>setModal(null)}/>
+          <PasswordModal participant={modal.participant} isNew={true} onSuccess={handleNewWithPassword} onCancel={()=>setModal(null)}/>
         ):(
           <PasswordModal participant={modal.participant} isNew={false}
             onSuccess={()=>{setModal(null);const p=participants.find(x=>x.id===modal.participant.id);if(p){setActiveParticipantId(p.id);setCurrentPreds({...(p.predictions||{})});db.getQuizAnswersByParticipant(p.id).then(ans=>setMyQuizAnswers(ans||[]));setScreen("participant");}}}
@@ -819,7 +774,6 @@ export default function QuinielaMundial() {
         )
       )}
 
-      {/* NAV */}
       <div style={{background:"linear-gradient(90deg,#0f1932,#1a0a2e)",borderBottom:`2px solid ${C.red}`,padding:"10px 16px",position:"sticky",top:0,zIndex:100}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
           <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>⚽ <span style={{color:C.red}}>QUINIELA</span> 2026</div>
@@ -838,7 +792,7 @@ export default function QuinielaMundial() {
         </div>
       </div>
 
-      {screens[screen] || screens.home}
+      {screens[screen]||screens.home}
     </div>
   );
 }
