@@ -126,7 +126,7 @@ export const getResult = (hg,ag) => {
 export const calcScore = (pred,real) => {
   if (!pred||real.homeGoals==null||real.awayGoals==null||pred.home==null||pred.away==null) return null;
   let pts=0;
-  if (getResult(Number(pred.home),Number(pred.away))===getResult(real.homeGoals,real.awayGoals)) pts++;
+  if (getResult(Number(pred.home),Number(pred.away))===getResult(real.homeGoals,real.awayGoals)) pts+=2;
   if (Number(pred.home)===real.homeGoals) pts++;
   if (Number(pred.away)===real.awayGoals) pts++;
   return pts;
