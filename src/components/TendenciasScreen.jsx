@@ -13,7 +13,6 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
   const finished = matches.filter(m => results[m.id]?.homeGoals != null);
   const total = participants.length;
 
-  // Team support count
   const teamSupport = {};
   matches.forEach(m => {
     if (!teamSupport[m.home]) teamSupport[m.home] = 0;
@@ -30,7 +29,6 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
   const mostBacked = teamEntries[0];
   const leastBacked = teamEntries[teamEntries.length-1];
 
-  // Result distribution
   let homeWins=0, awayWins=0, draws=0, totalPreds=0;
   let exactScores = {};
   matches.forEach(m => {
@@ -48,7 +46,6 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
   });
   const popularScore = Object.entries(exactScores).sort((a,b)=>b[1]-a[1])[0];
 
-  // Consensus per match
   const matchConsensus = matches.map(m => {
     const preds = participants.map(p => (p.predictions||{})[m.id]).filter(p=>p&&p.home!=null);
     if (preds.length === 0) return { m, pct:0, result:"—" };
@@ -65,7 +62,6 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
   const mostConsensus = matchConsensus[0];
   const leastConsensus = matchConsensus[matchConsensus.length-1];
 
-  // Contrarian participant
   const contrarian = participants.map(p => {
     let diff = 0;
     matches.forEach(m => {
@@ -87,7 +83,6 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
     return { ...p, diff };
   }).sort((a,b)=>b.diff-a.diff);
 
-  // Post-jornada stats (only for finished matches)
   const groupAciertos = finished.length > 0 ? (() => {
     let totalAciertos=0, totalExactos=0;
     let matchAciertos = finished.map(m => {
@@ -114,12 +109,124 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
 
   const resultLabel = r => r==="H"?"Local":r==="A"?"Visitante":r==="D"?"Empate":"—";
 
+  const ChampionSection = () => {
+    const myPick = championPicks?.find(p=>p.participant_id===activeParticipantId)?.team;
+    const totalVotos = championPicks?.length || 0;
+    const voteCounts = {};
+    (championPicks||[]).forEach(p => {
+      if (!voteCounts[p.team]) voteCounts[p.team] = {count:0, voters:[]};
+      voteCounts[p.team].count++;
+      const voter = participants.find(pp=>pp.id===p.participant_id);
+      if(voter) voteCounts[p.team].voters.push(voter.name);
+    });
+    const sorted = Object.entries(voteCounts).sort((a,b)=>b[1].count-a[1].count);
+
+    return (
+      <div style={card}>
+        <div style={sec}>🏆 ¿Quién gana el Mundial?</div>
+        {!myPick && activeParticipantId && (
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:13,color:"#888",marginBottom:8}}>Tu predicción (solo puedes votar una vez):</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <select value={selectedTeam} onChange={e=>setSelectedTeam(e.target.value)}
+                style={{background:"#0f3460",border:"1px solid #444",borderRadius:8,color:"#fff",padding:"10px 14px",fontSize:14,outline:"none",flex:1}}>
+                <option value="">Selecciona un equipo...</option>
+                <option value="Alemania">Alemania</option>
+                <option value="Arabia Saudita">Arabia Saudita</option>
+                <option value="Argelia">Argelia</option>
+                <option value="Argentina">Argentina</option>
+                <option value="Australia">Australia</option>
+                <option value="Austria">Austria</option>
+                <option value="Bosnia y Herz.">Bosnia y Herz.</option>
+                <option value="Brasil">Brasil</option>
+                <option value="Bélgica">Bélgica</option>
+                <option value="Cabo Verde">Cabo Verde</option>
+                <option value="Canadá">Canadá</option>
+                <option value="Chequia">Chequia</option>
+                <option value="Colombia">Colombia</option>
+                <option value="Congo RD">Congo RD</option>
+                <option value="Corea del Sur">Corea del Sur</option>
+                <option value="Costa de Marfil">Costa de Marfil</option>
+                <option value="Croacia">Croacia</option>
+                <option value="Curazao">Curazao</option>
+                <option value="Ecuador">Ecuador</option>
+                <option value="Egipto">Egipto</option>
+                <option value="Escocia">Escocia</option>
+                <option value="España">España</option>
+                <option value="Estados Unidos">Estados Unidos</option>
+                <option value="Francia">Francia</option>
+                <option value="Ghana">Ghana</option>
+                <option value="Haití">Haití</option>
+                <option value="Irán">Irán</option>
+                <option value="Iraq">Iraq</option>
+                <option value="Japón">Japón</option>
+                <option value="Jordania">Jordania</option>
+                <option value="Marruecos">Marruecos</option>
+                <option value="México">México</option>
+                <option value="Noruega">Noruega</option>
+                <option value="Nueva Zelanda">Nueva Zelanda</option>
+                <option value="Panamá">Panamá</option>
+                <option value="Paraguay">Paraguay</option>
+                <option value="Países Bajos">Países Bajos</option>
+                <option value="Portugal">Portugal</option>
+                <option value="Qatar">Qatar</option>
+                <option value="Senegal">Senegal</option>
+                <option value="Sudáfrica">Sudáfrica</option>
+                <option value="Suecia">Suecia</option>
+                <option value="Suiza">Suiza</option>
+                <option value="Turquía">Turquía</option>
+                <option value="Túnez">Túnez</option>
+                <option value="Uruguay">Uruguay</option>
+                <option value="Uzbekistán">Uzbekistán</option>
+              </select>
+              <button onClick={()=>{if(selectedTeam){onChampionPick(selectedTeam);setSelectedTeam("")}}} disabled={!selectedTeam}
+                style={{background:"#e94560",border:"none",color:"#fff",borderRadius:8,padding:"10px 20px",cursor:selectedTeam?"pointer":"default",fontSize:14,fontWeight:700,opacity:selectedTeam?1:0.5}}>
+                Votar
+              </button>
+            </div>
+          </div>
+        )}
+        {myPick && (
+          <div style={{background:"rgba(27,127,74,0.1)",border:"1px solid #1b7f4a",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:13}}>
+            Tu voto: <strong style={{color:"#4ade80"}}>{myPick}</strong> ✅
+          </div>
+        )}
+        {sorted.length > 0 ? (
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {sorted.map(([team, data]) => {
+              const pct = totalVotos > 0 ? Math.round((data.count/totalVotos)*100) : 0;
+              return (
+                <div key={team}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <div style={{fontSize:14,fontWeight:600}}>{team}</div>
+                    <div style={{fontSize:13,color:"#888"}}>{data.voters.join(", ")}</div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{flex:1,height:8,background:"rgba(255,255,255,0.08)",borderRadius:4,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${pct}%`,background:"#e94560",borderRadius:4,transition:"width .3s"}}/>
+                    </div>
+                    <div style={{fontSize:12,color:"#888",minWidth:40,textAlign:"right"}}>{pct}% ({data.count})</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{color:"#555",fontSize:13,textAlign:"center",padding:"20px 0"}}>Nadie ha votado aún.</div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div style={{ maxWidth:700, margin:"0 auto", padding:"20px 16px" }}>
       <div style={{ fontSize:22, fontWeight:900, marginBottom:4 }}>🔮 <span style={{color:C.red}}>Tendencias</span> del Grupo</div>
       <div style={{ fontSize:12, color:"#888", marginBottom:16 }}>Patrones y consensos de los pronósticos</div>
 
-      <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
+      {/* Campeón — primero */}
+      <ChampionSection />
+
+      <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap", marginTop:16 }}>
         {[[0,"Todo el torneo"],[1,"Jornada 1"],[2,"Jornada 2"],[3,"Jornada 3"]].map(([j,l])=>(
           <button key={j} style={{
             background:jFilter===j?C.red:"transparent",
@@ -130,7 +237,6 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
         ))}
       </div>
 
-      {/* Pronósticos generales */}
       <div style={card}>
         <div style={sec}>📊 Distribución de pronósticos</div>
         {totalPreds > 0 ? (
@@ -160,7 +266,6 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
         ) : <div style={{ color:"#555", fontSize:13 }}>Sin pronósticos registrados aún.</div>}
       </div>
 
-      {/* Equipos */}
       {mostBacked && (
         <div style={card}>
           <div style={sec}>🌍 Equipos</div>
@@ -181,25 +286,20 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
         </div>
       )}
 
-      {/* Consenso */}
       {mostConsensus && (
         <div style={card}>
           <div style={sec}>🎯 Consenso</div>
           <div style={{ display:"flex", gap:12 }}>
             <div style={{ flex:1, background:"rgba(255,255,255,0.04)", borderRadius:8, padding:"12px" }}>
               <div style={{ fontSize:11, color:"#888", marginBottom:6 }}>Mayor consenso</div>
-              <div style={{ fontWeight:700, fontSize:13 }}>
-                {ABBR[mostConsensus.m.home]} vs {ABBR[mostConsensus.m.away]}
-              </div>
+              <div style={{ fontWeight:700, fontSize:13 }}>{ABBR[mostConsensus.m.home]} vs {ABBR[mostConsensus.m.away]}</div>
               <div style={{ fontSize:12, color:"#888" }}>{resultLabel(mostConsensus.result)}</div>
               <div style={{ fontSize:18, fontWeight:900, color:C.red }}>{Math.round(mostConsensus.pct*100)}%</div>
             </div>
             {leastConsensus && (
               <div style={{ flex:1, background:"rgba(255,255,255,0.04)", borderRadius:8, padding:"12px" }}>
                 <div style={{ fontSize:11, color:"#888", marginBottom:6 }}>Más dividido</div>
-                <div style={{ fontWeight:700, fontSize:13 }}>
-                  {ABBR[leastConsensus.m.home]} vs {ABBR[leastConsensus.m.away]}
-                </div>
+                <div style={{ fontWeight:700, fontSize:13 }}>{ABBR[leastConsensus.m.home]} vs {ABBR[leastConsensus.m.away]}</div>
                 <div style={{ fontSize:12, color:"#888" }}>{resultLabel(leastConsensus.result)}</div>
                 <div style={{ fontSize:18, fontWeight:900, color:"#fbbf24" }}>{Math.round(leastConsensus.pct*100)}%</div>
               </div>
@@ -208,7 +308,6 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
         </div>
       )}
 
-      {/* Contrarian */}
       {contrarian.length > 0 && (
         <div style={card}>
           <div style={sec}>🤔 vs el grupo</div>
@@ -227,7 +326,6 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
         </div>
       )}
 
-      {/* Post-jornada stats */}
       {groupAciertos && finished.length > 0 && (
         <div style={card}>
           <div style={sec}>✅ Resultados del grupo</div>
@@ -255,127 +353,6 @@ export const TendenciasScreen = ({ participants, results, openJornadas, champion
           )}
         </div>
       )}
-
-      {/* Champion pick */}
-      <div style={{...card}}>
-        <div style={{...sec}}>🏆 ¿Quién gana el Mundial?</div>
-        {(() => {
-          const myPick = championPicks?.find(p=>p.participant_id===activeParticipantId)?.team;
-          const totalVotos = championPicks?.length || 0;
-          
-          // Count votes per team
-          const voteCounts = {};
-          (championPicks||[]).forEach(p => {
-            voteCounts[p.team] = (voteCounts[p.team]||{count:0,voters:[]});
-            voteCounts[p.team].count++;
-            const voter = participants.find(pp=>pp.id===p.participant_id);
-            if(voter) voteCounts[p.team].voters.push(voter.name);
-          });
-          const sorted = Object.entries(voteCounts).sort((a,b)=>b[1].count-a[1].count);
-
-          return (
-            <>
-              {!myPick && activeParticipantId && (
-                <div style={{marginBottom:16}}>
-                  <div style={{fontSize:13,color:"#888",marginBottom:8}}>Tu predicción (solo puedes votar una vez):</div>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    <select
-                      value={selectedTeam}
-                      onChange={e=>setSelectedTeam(e.target.value)}
-                      style={{background:"#0f3460",border:"1px solid #444",borderRadius:8,color:"#fff",padding:"10px 14px",fontSize:14,outline:"none",flex:1}}>
-                      <option value="">Selecciona un equipo...</option>
-                                            <option value="Alemania">Alemania</option>
-                      <option value="Arabia Saudita">Arabia Saudita</option>
-                      <option value="Argelia">Argelia</option>
-                      <option value="Argentina">Argentina</option>
-                      <option value="Australia">Australia</option>
-                      <option value="Austria">Austria</option>
-                      <option value="Bosnia y Herz.">Bosnia y Herz.</option>
-                      <option value="Brasil">Brasil</option>
-                      <option value="Bélgica">Bélgica</option>
-                      <option value="Cabo Verde">Cabo Verde</option>
-                      <option value="Canadá">Canadá</option>
-                      <option value="Chequia">Chequia</option>
-                      <option value="Colombia">Colombia</option>
-                      <option value="Congo RD">Congo RD</option>
-                      <option value="Corea del Sur">Corea del Sur</option>
-                      <option value="Costa de Marfil">Costa de Marfil</option>
-                      <option value="Croacia">Croacia</option>
-                      <option value="Curazao">Curazao</option>
-                      <option value="Ecuador">Ecuador</option>
-                      <option value="Egipto">Egipto</option>
-                      <option value="Escocia">Escocia</option>
-                      <option value="España">España</option>
-                      <option value="Estados Unidos">Estados Unidos</option>
-                      <option value="Francia">Francia</option>
-                      <option value="Ghana">Ghana</option>
-                      <option value="Haití">Haití</option>
-                      <option value="Hungría">Hungría</option>
-                      <option value="Indonesia">Indonesia</option>
-                      <option value="Irak">Irak</option>
-                      <option value="Irán">Irán</option>
-                      <option value="Japón">Japón</option>
-                      <option value="Jordania">Jordania</option>
-                      <option value="Marruecos">Marruecos</option>
-                      <option value="México">México</option>
-                      <option value="Noruega">Noruega</option>
-                      <option value="Nueva Zelanda">Nueva Zelanda</option>
-                      <option value="Panamá">Panamá</option>
-                      <option value="Paraguay">Paraguay</option>
-                      <option value="Países Bajos">Países Bajos</option>
-                      <option value="Portugal">Portugal</option>
-                      <option value="Qatar">Qatar</option>
-                      <option value="Senegal">Senegal</option>
-                      <option value="Sudáfrica">Sudáfrica</option>
-                      <option value="Suecia">Suecia</option>
-                      <option value="Suiza">Suiza</option>
-                      <option value="Turquía">Turquía</option>
-                      <option value="Túnez">Túnez</option>
-                      <option value="Uruguay">Uruguay</option>
-                      <option value="Uzbekistán">Uzbekistán</option>
-                    </select>
-                    <button
-                      onClick={()=>{if(selectedTeam){onChampionPick(selectedTeam);setSelectedTeam("")}}}
-                      disabled={!selectedTeam}
-                      style={{background:"#e94560",border:"none",color:"#fff",borderRadius:8,padding:"10px 20px",cursor:selectedTeam?"pointer":"default",fontSize:14,fontWeight:700,opacity:selectedTeam?1:0.5}}>
-                      Votar
-                    </button>
-                  </div>
-                </div>
-              )}
-              {myPick && (
-                <div style={{background:"rgba(27,127,74,0.1)",border:"1px solid #1b7f4a",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:13}}>
-                  Tu voto: <strong style={{color:"#4ade80"}}>{myPick}</strong> ✅
-                </div>
-              )}
-              {sorted.length > 0 ? (
-                <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  {sorted.map(([team, data]) => {
-                    const pct = totalVotos > 0 ? Math.round((data.count/totalVotos)*100) : 0;
-                    return (
-                      <div key={team}>
-                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                          <div style={{fontSize:14,fontWeight:600}}>{team}</div>
-                          <div style={{fontSize:13,color:"#888"}}>{data.voters.join(", ")}</div>
-                        </div>
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <div style={{flex:1,height:8,background:"rgba(255,255,255,0.08)",borderRadius:4,overflow:"hidden"}}>
-                            <div style={{height:"100%",width:`${pct}%`,background:"#e94560",borderRadius:4,transition:"width .3s"}}/>
-                          </div>
-                          <div style={{fontSize:12,color:"#888",minWidth:40,textAlign:"right"}}>{pct}% ({data.count})</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div style={{color:"#555",fontSize:13,textAlign:"center",padding:"20px 0"}}>Nadie ha votado aún.</div>
-              )}
-            </>
-          );
-        })()}
-      </div>
-
     </div>
   );
 };
