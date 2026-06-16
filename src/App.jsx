@@ -66,7 +66,6 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
   const [confirmDelete,setConfirmDelete]=useState(null);
   const [editingName,setEditingName]=useState(null);
   const [newNameInput,setNewNameInput]=useState("");
-  const [newQuizLabel,setNewQuizLabel]=useState("");
   const groups=[...new Set(ALL_MATCHES.map(m=>m.group))];
   const filtered=ALL_MATCHES.filter(m=>(gFilter==="Todos"||m.group===gFilter)&&(jFilter===0||m.jornada===jFilter));
   const byDate=filtered.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
@@ -312,7 +311,7 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
                           <ScoreInput value={pred.away} onChange={v=>handlePredChange(m.id,"away",v)} disabled={done}/>
                           <span style={{fontSize:13,color:"#ccc",fontWeight:600,minWidth:52}}>{ABBR[m.away]||m.away} {FLAGS[m.away]||"🏳️"}</span>
                           {done&&pts!==null&&(
-                            <span style={{...pill(pts===4?"#1b7f4a":pts===0?"#7f1b1b":"#7f5a00"),minWidth:36,textAlign:"center"}}>
+                            <span style={{...pill(pts===5?"#1b7f4a":pts===0?"#7f1b1b":"#7f5a00"),minWidth:36,textAlign:"center"}}>
                               {pts}pt{pts!==1?"s":""}
                             </span>
                           )}
@@ -342,7 +341,7 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
   return (
     <div style={{maxWidth:600,margin:"0 auto",padding:"20px 16px"}}>
       <div style={{fontSize:22,fontWeight:900,marginBottom:4}}>🏆 Tabla <span style={{color:C.red}}>General</span></div>
-      <div style={{fontSize:12,color:"#888",marginBottom:20}}>2pts ganador/empate · 1pt goles local · 1pt goles visitante</div>
+      <div style={{fontSize:12,color:"#888",marginBottom:20}}>2pts resultado · 1pt goles local · 1pt goles visitante · +1pt marcador exacto</div>
 
       {ranking.length===0?(
         <div style={{...card,textAlign:"center",padding:40}}>
@@ -491,14 +490,14 @@ const PronosticosScreen = ({participants,results}) => {
                     const hasPred=pred&&pred.home!=null&&pred.away!=null;
                     return (
                       <div key={p.id} style={{
-                        background:pts===4?"rgba(27,127,74,0.2)":pts===0&&hasResult?"rgba(127,27,27,0.2)":"rgba(255,255,255,0.05)",
-                        border:`1px solid ${pts===4?"#1b7f4a":pts===0&&hasResult?"#7f1b1b":"#333"}`,
+                        background:pts===5?"rgba(27,127,74,0.2)":pts===0&&hasResult?"rgba(127,27,27,0.2)":"rgba(255,255,255,0.05)",
+                        border:`1px solid ${pts===5?"#1b7f4a":pts===0&&hasResult?"#7f1b1b":"#333"}`,
                         borderRadius:8,padding:"6px 10px",minWidth:80,textAlign:"center"
                       }}>
                         <div style={{fontSize:11,color:"#888",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:80}}>{p.name}</div>
                         <div style={{fontWeight:700,fontSize:14}}>{hasPred?`${pred.home}-${pred.away}`:<span style={{color:"#555"}}>—</span>}</div>
                         {pts!==null&&(
-                          <div style={{fontSize:10,color:pts===4?"#4ade80":pts===0?"#f87171":"#fbbf24",fontWeight:700,marginTop:2}}>
+                          <div style={{fontSize:10,color:pts===5?"#4ade80":pts===0?"#f87171":"#fbbf24",fontWeight:700,marginTop:2}}>
                             {pts}pt{pts!==1?"s":""}
                           </div>
                         )}
