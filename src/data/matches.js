@@ -129,6 +129,7 @@ export const calcScore = (pred,real) => {
   if (getResult(Number(pred.home),Number(pred.away))===getResult(real.homeGoals,real.awayGoals)) pts+=2;
   if (Number(pred.home)===real.homeGoals) pts++;
   if (Number(pred.away)===real.awayGoals) pts++;
+  if (Number(pred.home)===real.homeGoals && Number(pred.away)===real.awayGoals) pts++;
   return pts;
 };
 
