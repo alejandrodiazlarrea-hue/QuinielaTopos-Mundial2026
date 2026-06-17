@@ -3,10 +3,10 @@ import { ALL_MATCHES, getResult, isExact, isResultCorrect, calcScore } from "../
 export const BADGE_DEFS = {
   EZ:           { emoji:"⚡", name:"EZ",             desc:"Marcador exacto acertado",                    coins:40,   type:"season" },
   GRITALO:      { emoji:"👑", name:"Grítalo Reina",  desc:"Más marcadores exactos de la jornada",        coins:100,  type:"dynamic" },
-  SO_HOT:       { emoji:"🔥", name:"So Hot",         desc:"2-3 resultados correctos en una jornada",     coins:50,   type:"season" },
-  ON_FIRE:      { emoji:"🚒", name:"Muy Caliente",   desc:"4-6 resultados correctos en una jornada",     coins:120,  type:"season" },
-  MODO_BESTIA:  { emoji:"🐺", name:"En su Prime",    desc:"7-9 resultados correctos en una jornada",     coins:200,  type:"season" },
-  EN_SU_PRIME:  { emoji:"🌟", name:"Dios Plan",      desc:"10+ resultados correctos en una jornada",     coins:400,  type:"season" },
+  SO_HOT:       { emoji:"🔥", name:"So Hot",         desc:"5-7 resultados correctos en una jornada",     coins:50,   type:"season" },
+  ON_FIRE:      { emoji:"🚒", name:"Muy Caliente",   desc:"8-10 resultados correctos en una jornada",    coins:120,  type:"season" },
+  MODO_BESTIA:  { emoji:"🐺", name:"En su Prime",    desc:"11-13 resultados correctos en una jornada",   coins:200,  type:"season" },
+  EN_SU_PRIME:  { emoji:"🌟", name:"Dios Plan",      desc:"14+ resultados correctos en una jornada",     coins:400,  type:"season" },
   GGS:          { emoji:"🧊", name:"Hacker",         desc:"Acertó el partido con menor % de aciertos",   coins:80,   type:"season" },
   MIL_IQ:       { emoji:"🧠", name:"+1000 de IQ",   desc:"Único en acertar un resultado",               coins:150,  type:"season" },
   DELULU:       { emoji:"🤪", name:"Delulu",         desc:"Pronóstico más loco y fallido del grupo",     coins:-20,  type:"season" },
@@ -63,13 +63,13 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
 
   // ── So Hot / On Fire / Modo Bestia / En su Prime ──
   stats.forEach(s => {
-    if (s.resultCount >= 10) {
+    if (s.resultCount >= 14) {
       awarded.push({ participantId: s.id, badgeKey: "EN_SU_PRIME" });
-    } else if (s.resultCount >= 7) {
+    } else if (s.resultCount >= 11) {
       awarded.push({ participantId: s.id, badgeKey: "MODO_BESTIA" });
-    } else if (s.resultCount >= 4) {
+    } else if (s.resultCount >= 8) {
       awarded.push({ participantId: s.id, badgeKey: "ON_FIRE" });
-    } else if (s.resultCount >= 2) {
+    } else if (s.resultCount >= 5) {
       awarded.push({ participantId: s.id, badgeKey: "SO_HOT" });
     }
   });
