@@ -10,7 +10,7 @@ export const BADGE_DEFS = {
   MIL_IQ:       { emoji:"🧠",  name:"+1000 de IQ",           desc:"Acertó el resultado del partido más sorpresivo",   coins:50,     type:"season" },
   HACKER:       { emoji:"🧊",  name:"Hacker",                desc:"Único en acertar el marcador exacto de un partido",coins:150,    type:"season" },
   ALMANAQUE:    { emoji:"📖",  name:"El Almanaque",          desc:"Acertó todos los resultados de un mismo día",      coins:40,     type:"season" },
-  CHATGPT:      { emoji:"🤖",  name:"Ni con ChatGPT",        desc:"No acertó ningún resultado en todo un día",        coins:-40,    type:"season" },
+  CHATGPT:      { emoji:"🤖",  name:"Ni con ChatGPT",        desc:"No acertó ningún resultado en todo un día",        coins:-10,    type:"season" },
   DELULU:       { emoji:"🤪",  name:"Delulu",                desc:"Pronóstico más alejado de la realidad por partido",coins:-10,    type:"season" },
   CASITA:       { emoji:"🏠",  name:"¿Todo bien en casita?", desc:"Más Delulus acumulados en la jornada",             coins:-30,    type:"dynamic" },
   QUE_BURRO:    { emoji:"🐴",  name:"Que Burro, Póngale 0",  desc:"Único en fallar lo que todos acertaron",           coins:-20,    type:"season" },
