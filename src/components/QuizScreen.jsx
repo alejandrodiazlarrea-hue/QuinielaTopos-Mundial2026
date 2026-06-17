@@ -8,7 +8,6 @@ const getTodayDate = () => {
   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 };
 
-// Hardcoded assignments computed offline — guaranteed zero repeats across 17 quizzes
 const ASSIGNMENTS = {
   easy:   [16,2,34,32,11,24,36,27,30,22,23,28,26,13,35,14,0,9,6,39,15,29,5,4,12,37,21,1,31,25,10,33,17,19,8,38,18,3,7,20],
   medium: [3,20,38,19,30,33,21,22,17,26,28,31,0,12,37,34,16,6,27,10,15,11,23,4,13,36,35,39,1,7,18,14,25,8,29,2,5,24,32,9],
@@ -31,7 +30,12 @@ const getDailyQuestions = (label) => {
     hard[ASSIGNMENTS.hard[i]],
   ];
 
-  return picked.map((q, idx) => ({ ...q, idx }));
+  return picked.map((q, idx) => {
+    const correctAnswer = q.options[q.correct_index];
+    const shuffled = [...q.options].sort(() => Math.random() - 0.5);
+    const newCorrectIndex = shuffled.indexOf(correctAnswer);
+    return { ...q, options: shuffled, correct_index: newCorrectIndex, idx };
+  });
 };
 
 const TIMER_SECONDS = 15;
@@ -43,7 +47,7 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
   const [currentQ, setCurrentQ] = useState(0);
   const [selected, setSelected] = useState({});
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
-  const [phase, setPhase] = useState("list"); // list | playing | done
+  const [phase, setPhase] = useState("list");
   const [results, setResults] = useState(null);
   const [completedLabels, setCompletedLabels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,16 +55,13 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
 
   useEffect(() => {
     if (!participant) { setLoading(false); return; }
-    // Check which quizzes participant already completed
     db.getQuizAnswersByParticipant(participant.id).then(answers => {
       const labels = [...new Set(answers.map(a => a.quiz_label).filter(Boolean))];
-      console.log("Completed quiz labels from DB:", labels);
       setCompletedLabels(labels);
       setLoading(false);
     });
   }, [participant]);
 
-  // Use refs to avoid stale closures in timer
   const currentQRef = useRef(0);
   const questionsRef = useRef([]);
   const selectedRef = useRef({});
@@ -83,7 +84,6 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
         setCurrentQ(q + 1);
         setTimeLeft(TIMER_SECONDS);
       } else {
-        // Last question — finish directly with the selection map
         const finalSel = sel_map;
         const answers = qs.map((question, i) => {
           const s = finalSel[i] ?? -1;
@@ -100,7 +100,6 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
     }, sel === -1 ? 800 : 1000);
   };
 
-  // Timer — resets per question
   useEffect(() => {
     if (phase !== "playing") return;
     advancingRef.current = false;
@@ -108,7 +107,6 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
-          // Time's up
           setSelected(s => {
             if (s[currentQRef.current] === undefined) {
               const updated = { ...s, [currentQRef.current]: -1 };
@@ -135,8 +133,6 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
     doAdvance(optIdx, updated);
   };
 
-
-
   const startQuiz = (label) => {
     const qs = getDailyQuestions(label);
     setQuestions(qs);
@@ -161,7 +157,6 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
     </div>
   );
 
-  // ── LIST PHASE ──
   if (phase === "list") {
     const available = openQuizDates || [];
     return (
@@ -202,7 +197,6 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
     );
   }
 
-  // ── DONE PHASE ──
   if (phase === "done" && results) {
     return (
       <div style={{ maxWidth:600, margin:"0 auto", padding:"20px 16px" }}>
@@ -216,7 +210,6 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
           {results.correct===5&&<div style={{ fontSize:13, color:"#4ade80", marginTop:6 }}>¡Bonus perfecto! +20 🪙 extra</div>}
         </div>
 
-        {/* Answer review */}
         <div style={{ marginTop:16 }}>
           {questions.map((q, i) => {
             const ans = results.answers[i];
@@ -248,7 +241,6 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
     );
   }
 
-  // ── PLAYING PHASE ──
   const q = questions[currentQ];
   if (!q) return null;
   const timerPct = (timeLeft / TIMER_SECONDS) * 100;
@@ -257,7 +249,6 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
 
   return (
     <div style={{ maxWidth:600, margin:"0 auto", padding:"20px 16px" }}>
-      {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
         <div style={{ fontSize:13, color:"#888" }}>Pregunta {currentQ+1} / {questions.length}</div>
         <div style={{ fontSize:22, fontWeight:900, color:timerColor, fontVariantNumeric:"tabular-nums", minWidth:40, textAlign:"right" }}>
@@ -265,12 +256,10 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
         </div>
       </div>
 
-      {/* Timer bar */}
       <div style={{ height:6, background:"rgba(255,255,255,0.08)", borderRadius:3, marginBottom:20, overflow:"hidden" }}>
         <div style={{ height:"100%", width:`${timerPct}%`, background:timerColor, borderRadius:3, transition:"width 1s linear" }}/>
       </div>
 
-      {/* Question */}
       <div style={{ ...card, padding:"20px" }}>
         <div style={{ fontSize:11, color:"#888", marginBottom:8 }}>
           {q.category} · {q.difficulty === "facil" ? "🟢 Fácil" : q.difficulty === "media" ? "🟡 Media" : "🔴 Difícil"}
@@ -299,7 +288,6 @@ export const QuizScreen = ({ participant, openQuizDates, onSaveAnswers }) => {
         </div>
       </div>
 
-      {/* Progress dots */}
       <div style={{ display:"flex", justifyContent:"center", gap:8, marginTop:16 }}>
         {questions.map((_,i) => (
           <div key={i} style={{
