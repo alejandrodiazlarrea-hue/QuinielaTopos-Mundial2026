@@ -1,20 +1,21 @@
 import { ALL_MATCHES, getResult, isExact, isResultCorrect, calcScore } from "../data/matches.js";
 
 export const BADGE_DEFS = {
-  EZ:           { emoji:"⚡", name:"EZ",             desc:"Marcador exacto acertado",                    coins:40,   type:"season" },
-  GRITALO:      { emoji:"👑", name:"Grítalo Reina",  desc:"Más marcadores exactos de la jornada",        coins:100,  type:"dynamic" },
-  SO_HOT:       { emoji:"🔥", name:"So Hot",         desc:"5-7 resultados correctos en una jornada",     coins:50,   type:"season" },
-  ON_FIRE:      { emoji:"🚒", name:"Muy Caliente",   desc:"8-10 resultados correctos en una jornada",    coins:120,  type:"season" },
-  MODO_BESTIA:  { emoji:"🐺", name:"En su Prime",    desc:"11-13 resultados correctos en una jornada",   coins:200,  type:"season" },
-  EN_SU_PRIME:  { emoji:"🌟", name:"Dios Plan",      desc:"14+ resultados correctos en una jornada",     coins:400,  type:"season" },
-  GGS:          { emoji:"🧊", name:"Hacker",         desc:"Acertó el partido con menor % de aciertos",   coins:80,   type:"season" },
-  MIL_IQ:       { emoji:"🧠", name:"+1000 de IQ",   desc:"Único en acertar un resultado",               coins:150,  type:"season" },
-  DELULU:       { emoji:"🤪", name:"Delulu",         desc:"Pronóstico más loco y fallido del grupo",     coins:-20,  type:"season" },
-  QUE_BURRO:    { emoji:"🐴", name:"Que Burro, Póngale 0", desc:"Único en fallar lo que todos acertaron", coins:-30, type:"season" },
-  LA_CABRA:     { emoji:"🐐", name:"La Cabra",       desc:"Mayor puntaje de la jornada",                 coins:130,  type:"dynamic" },
-  CRUZAZULEO:   { emoji:"🔵", name:"La Cruzazuleó",  desc:"Segundo lugar de la jornada",                 coins:70,   type:"dynamic" },
-  MEJOR_NADOTA: { emoji:"🗑️", name:"Mejor Nadota",   desc:"Tercer lugar de la jornada",                  coins:-30,  type:"dynamic" },
-  F_WE:         { emoji:"💀", name:"F we",           desc:"Último lugar de la jornada",                  coins:-60,  type:"dynamic" },
+  EZ:           { emoji:"⚡", name:"EZ",                    desc:"Marcador exacto acertado",                    coins:50,   type:"season" },
+  GRITALO:      { emoji:"👑", name:"Grítalo Reina",         desc:"Más marcadores exactos de la jornada",        coins:80,   type:"dynamic" },
+  SO_HOT:       { emoji:"🔥", name:"So Hot",                desc:"5-7 resultados correctos en una jornada",     coins:20,   type:"season" },
+  ON_FIRE:      { emoji:"🚒", name:"On Fire",               desc:"8-10 resultados correctos en una jornada",    coins:40,   type:"season" },
+  MODO_BESTIA:  { emoji:"🐺", name:"En su Prime",           desc:"11-13 resultados correctos en una jornada",   coins:60,   type:"season" },
+  EN_SU_PRIME:  { emoji:"🌟", name:"Dios Plan",             desc:"14+ resultados correctos en una jornada",     coins:100,  type:"season" },
+  GGS:          { emoji:"🧊", name:"Hacker",                desc:"Acertó el partido con menor % de aciertos",   coins:30,   type:"season" },
+  MIL_IQ:       { emoji:"🧠", name:"+1000 de IQ",          desc:"Único en acertar un resultado",               coins:50,   type:"season" },
+  DELULU:       { emoji:"🤪", name:"Delulu",                desc:"Pronóstico más alejado de la realidad por partido", coins:-10, type:"season" },
+  CASITA:       { emoji:"🏠", name:"¿Todo bien en casita?", desc:"Más Delulus acumulados en la jornada",        coins:-30,  type:"dynamic" },
+  QUE_BURRO:    { emoji:"🐴", name:"Que Burro, Póngale 0",  desc:"Único en fallar lo que todos acertaron",      coins:-20,  type:"season" },
+  LA_CABRA:     { emoji:"🐐", name:"La Cabra",              desc:"Mayor puntaje de la jornada",                 coins:100,  type:"dynamic" },
+  CRUZAZULEO:   { emoji:"🔵", name:"La Cruzazuleó",         desc:"Segundo lugar de la jornada",                 coins:60,   type:"dynamic" },
+  MEJOR_NADOTA: { emoji:"🗑️", name:"Mejor Nadota",          desc:"Tercer lugar de la jornada",                  coins:20,   type:"dynamic" },
+  F_WE:         { emoji:"💀", name:"F we",                  desc:"Último lugar de la jornada",                  coins:-40,  type:"dynamic" },
 };
 
 export const COIN_VALUES = Object.fromEntries(
@@ -30,7 +31,7 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
 
   const stats = participants.map(p => {
     const preds = p.predictions || {};
-    let pts = 0, exactCount = 0, resultCount = 0;
+    let pts = 0, exactCount = 0, resultCount = 0, deluluCount = 0;
     finishedMatches.forEach(m => {
       const pred = preds[m.id];
       const real = results[m.id];
@@ -40,7 +41,7 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
       if (isExact(pred, real)) exactCount++;
       if (isResultCorrect(pred, real)) resultCount++;
     });
-    return { id: p.id, pts, exactCount, resultCount };
+    return { id: p.id, pts, exactCount, resultCount, deluluCount };
   });
 
   // ── EZ: uno por cada marcador exacto ──
@@ -61,7 +62,7 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
     });
   }
 
-  // ── So Hot / On Fire / Modo Bestia / En su Prime ──
+  // ── So Hot / On Fire / En su Prime / Dios Plan ──
   stats.forEach(s => {
     if (s.resultCount >= 14) {
       awarded.push({ participantId: s.id, badgeKey: "EN_SU_PRIME" });
@@ -106,46 +107,52 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
     }
   });
 
-  // ── Delulu: pronóstico incorrecto menos compartido ──
-  const wrongPredCounts = {};
-  participants.forEach(p => {
-    finishedMatches.forEach(m => {
+  // ── DELULU: pronóstico más alejado de la realidad por partido ──
+  const deluluCounts = {};
+  participants.forEach(p => { deluluCounts[p.id] = 0; });
+
+  finishedMatches.forEach(m => {
+    const real = results[m.id];
+    let maxDist = -1;
+    let deluluPids = [];
+    participants.forEach(p => {
       const pred = (p.predictions||{})[m.id];
-      if (!pred || isResultCorrect(pred, results[m.id])) return;
-      const key = `${m.id}-${pred.home}-${pred.away}`;
-      if (!wrongPredCounts[key]) wrongPredCounts[key] = { count: 0, pids: [], matchId: m.id };
-      wrongPredCounts[key].count++;
-      wrongPredCounts[key].pids.push(p.id);
+      if (!pred || pred.home == null || isResultCorrect(pred, real)) return;
+      const dist = Math.abs(Number(pred.home) - real.homeGoals) + Math.abs(Number(pred.away) - real.awayGoals);
+      if (dist > maxDist) { maxDist = dist; deluluPids = [p.id]; }
+      else if (dist === maxDist) { deluluPids.push(p.id); }
     });
+    if (maxDist > 0) {
+      deluluPids.forEach(pid => {
+        awarded.push({ participantId: pid, badgeKey: "DELULU" });
+        deluluCounts[pid] = (deluluCounts[pid] || 0) + 1;
+      });
+    }
   });
-  const wrongEntries = Object.values(wrongPredCounts);
-  if (wrongEntries.length > 0) {
-    const minCount = Math.min(...wrongEntries.map(e => e.count));
-    wrongEntries.filter(e => e.count === minCount).forEach(e => {
-      e.pids.forEach(pid => awarded.push({ participantId: pid, badgeKey: "DELULU" }));
+
+  // ── ¿Todo bien en casita?: más DELULUs acumulados en la jornada ──
+  const maxDelulu = Math.max(...Object.values(deluluCounts));
+  if (maxDelulu > 0) {
+    Object.entries(deluluCounts).filter(([,c]) => c === maxDelulu).forEach(([pid]) => {
+      awarded.push({ participantId: Number(pid), badgeKey: "CASITA" });
     });
   }
 
   // ── Clasificación jornada ──
   const sorted = [...stats].sort((a,b) => b.pts - a.pts);
   if (sorted.length > 0) {
-    // 1er lugar — La Cabra
     const maxPts = sorted[0].pts;
     sorted.filter(s => s.pts === maxPts).forEach(s => awarded.push({ participantId: s.id, badgeKey: "LA_CABRA" }));
 
-    // 2do lugar — Cruzazuleó
     const rank2 = sorted.find(s => s.pts < maxPts);
     if (rank2) {
       sorted.filter(s => s.pts === rank2.pts).forEach(s => awarded.push({ participantId: s.id, badgeKey: "CRUZAZULEO" }));
-
-      // 3er lugar — Mejor Nadota
       const rank3 = sorted.find(s => s.pts < rank2.pts);
       if (rank3) {
         sorted.filter(s => s.pts === rank3.pts).forEach(s => awarded.push({ participantId: s.id, badgeKey: "MEJOR_NADOTA" }));
       }
     }
 
-    // Último lugar — F we
     const minPts = sorted[sorted.length - 1].pts;
     sorted.filter(s => s.pts === minPts).forEach(s => awarded.push({ participantId: s.id, badgeKey: "F_WE" }));
   }
