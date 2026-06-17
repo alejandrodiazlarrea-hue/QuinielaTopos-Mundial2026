@@ -1,36 +1,33 @@
-import { ALL_MATCHES, getResult, isExact, isResultCorrect } from "../data/matches.js";
+import { ALL_MATCHES, getResult, isExact, isResultCorrect, calcScore } from "../data/matches.js";
 
 export const BADGE_DEFS = {
   EZ:           { emoji:"⚡", name:"EZ",             desc:"Marcador exacto acertado",                    coins:40,   type:"season" },
   GRITALO:      { emoji:"👑", name:"Grítalo Reina",  desc:"Más marcadores exactos de la jornada",        coins:100,  type:"dynamic" },
-  SO_HOT:       { emoji:"🔥", name:"So Hot",         desc:"5-9 resultados correctos en una jornada",     coins:50,   type:"season" },
-  ON_FIRE:      { emoji:"🚒", name:"Muy Caliente",   desc:"10-15 resultados correctos en una jornada",   coins:120,  type:"season" },
-  MODO_BESTIA:  { emoji:"🐺", name:"En su Prime",    desc:"16+ resultados correctos en una jornada",     coins:200,  type:"season" },
-  EN_SU_PRIME:  { emoji:"🌟", name:"Dios Plan",     desc:"Jornada perfecta — todos los resultados",    coins:400,  type:"season" },
-  GGS:          { emoji:"🧊", name:"Hacker",        desc:"Acertó el partido con menor % de aciertos",   coins:80,   type:"season" },
+  SO_HOT:       { emoji:"🔥", name:"So Hot",         desc:"2-3 resultados correctos en una jornada",     coins:50,   type:"season" },
+  ON_FIRE:      { emoji:"🚒", name:"Muy Caliente",   desc:"4-6 resultados correctos en una jornada",     coins:120,  type:"season" },
+  MODO_BESTIA:  { emoji:"🐺", name:"En su Prime",    desc:"7-9 resultados correctos en una jornada",     coins:200,  type:"season" },
+  EN_SU_PRIME:  { emoji:"🌟", name:"Dios Plan",      desc:"10+ resultados correctos en una jornada",     coins:400,  type:"season" },
+  GGS:          { emoji:"🧊", name:"Hacker",         desc:"Acertó el partido con menor % de aciertos",   coins:80,   type:"season" },
   MIL_IQ:       { emoji:"🧠", name:"+1000 de IQ",   desc:"Único en acertar un resultado",               coins:150,  type:"season" },
   DELULU:       { emoji:"🤪", name:"Delulu",         desc:"Pronóstico más loco y fallido del grupo",     coins:-20,  type:"season" },
   QUE_BURRO:    { emoji:"🐴", name:"Que Burro, Póngale 0", desc:"Único en fallar lo que todos acertaron", coins:-30, type:"season" },
   LA_CABRA:     { emoji:"🐐", name:"La Cabra",       desc:"Mayor puntaje de la jornada",                 coins:130,  type:"dynamic" },
   CRUZAZULEO:   { emoji:"🔵", name:"La Cruzazuleó",  desc:"Segundo lugar de la jornada",                 coins:70,   type:"dynamic" },
-  YA_MERITO:    { emoji:"🥉", name:"Ya Merito",      desc:"Tercer lugar de la jornada",                  coins:40,   type:"dynamic" },
-  MEJOR_NADOTA: { emoji:"🗑️", name:"Mejor Nadota",   desc:"Último lugar de la jornada",                  coins:-30,  type:"dynamic" },
-  F_WE:         { emoji:"💀", name:"F we",           desc:"Cero puntos en la jornada",                   coins:-60,  type:"dynamic" },
+  MEJOR_NADOTA: { emoji:"🗑️", name:"Mejor Nadota",   desc:"Tercer lugar de la jornada",                  coins:-30,  type:"dynamic" },
+  F_WE:         { emoji:"💀", name:"F we",           desc:"Último lugar de la jornada",                  coins:-60,  type:"dynamic" },
 };
 
 export const COIN_VALUES = Object.fromEntries(
   Object.entries(BADGE_DEFS).map(([k,v]) => [k, v.coins])
 );
 
-// Calculate badges for a completed jornada
 export const calcBadgesForJornada = (jornada, participants, results) => {
   const jMatches = ALL_MATCHES.filter(m => m.jornada === jornada);
   const finishedMatches = jMatches.filter(m => results[m.id]?.homeGoals != null);
   if (finishedMatches.length === 0) return [];
 
-  const awarded = []; // { participantId, badgeKey }
+  const awarded = [];
 
-  // Per-participant stats
   const stats = participants.map(p => {
     const preds = p.predictions || {};
     let pts = 0, exactCount = 0, resultCount = 0;
@@ -38,23 +35,15 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
       const pred = preds[m.id];
       const real = results[m.id];
       if (!pred) return;
-      if (isExact(pred, real)) { exactCount++; pts += 3; }
-      else if (isResultCorrect(pred, real)) { pts += 1; resultCount++; }
-      // pts for result only (not exact)
+      const score = calcScore(pred, real);
+      if (score != null) pts += score;
+      if (isExact(pred, real)) exactCount++;
+      if (isResultCorrect(pred, real)) resultCount++;
     });
-    // Recalc pts properly
-    pts = 0;
-    finishedMatches.forEach(m => {
-      const pred = preds[m.id];
-      const real = results[m.id];
-      if (!pred) return;
-      if (isExact(pred, real)) pts += 3;
-      else if (isResultCorrect(pred, real)) pts += 1;
-    });
-    return { id: p.id, pts, exactCount, resultCount: resultCount + exactCount };
+    return { id: p.id, pts, exactCount, resultCount };
   });
 
-  // ── EZ: one per exact match ──
+  // ── EZ: uno por cada marcador exacto ──
   participants.forEach(p => {
     const preds = p.predictions || {};
     finishedMatches.forEach(m => {
@@ -64,7 +53,7 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
     });
   });
 
-  // ── Grítalo Reina: most exact in jornada ──
+  // ── Grítalo Reina: más exactos de la jornada ──
   const maxExact = Math.max(...stats.map(s => s.exactCount));
   if (maxExact > 0) {
     stats.filter(s => s.exactCount === maxExact).forEach(s => {
@@ -74,13 +63,13 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
 
   // ── So Hot / On Fire / Modo Bestia / En su Prime ──
   stats.forEach(s => {
-    if (s.resultCount === finishedMatches.length) {
+    if (s.resultCount >= 10) {
       awarded.push({ participantId: s.id, badgeKey: "EN_SU_PRIME" });
-    } else if (s.resultCount >= 16) {
+    } else if (s.resultCount >= 7) {
       awarded.push({ participantId: s.id, badgeKey: "MODO_BESTIA" });
-    } else if (s.resultCount >= 10) {
+    } else if (s.resultCount >= 4) {
       awarded.push({ participantId: s.id, badgeKey: "ON_FIRE" });
-    } else if (s.resultCount >= 5) {
+    } else if (s.resultCount >= 2) {
       awarded.push({ participantId: s.id, badgeKey: "SO_HOT" });
     }
   });
@@ -137,28 +126,33 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
     });
   }
 
-  // ── Clasificación jornada: La Cabra, Cruzazuleó, Ya Merito, Mejor Nadota, F we ──
+  // ── Clasificación jornada ──
   const sorted = [...stats].sort((a,b) => b.pts - a.pts);
   if (sorted.length > 0) {
+    // 1er lugar — La Cabra
     const maxPts = sorted[0].pts;
     sorted.filter(s => s.pts === maxPts).forEach(s => awarded.push({ participantId: s.id, badgeKey: "LA_CABRA" }));
+
+    // 2do lugar — Cruzazuleó
     const rank2 = sorted.find(s => s.pts < maxPts);
     if (rank2) {
       sorted.filter(s => s.pts === rank2.pts).forEach(s => awarded.push({ participantId: s.id, badgeKey: "CRUZAZULEO" }));
+
+      // 3er lugar — Mejor Nadota
       const rank3 = sorted.find(s => s.pts < rank2.pts);
       if (rank3) {
-        sorted.filter(s => s.pts === rank3.pts).forEach(s => awarded.push({ participantId: s.id, badgeKey: "YA_MERITO" }));
+        sorted.filter(s => s.pts === rank3.pts).forEach(s => awarded.push({ participantId: s.id, badgeKey: "MEJOR_NADOTA" }));
       }
     }
+
+    // Último lugar — F we
     const minPts = sorted[sorted.length - 1].pts;
-    sorted.filter(s => s.pts === minPts).forEach(s => awarded.push({ participantId: s.id, badgeKey: "MEJOR_NADOTA" }));
-    sorted.filter(s => s.pts === 0).forEach(s => awarded.push({ participantId: s.id, badgeKey: "F_WE" }));
+    sorted.filter(s => s.pts === minPts).forEach(s => awarded.push({ participantId: s.id, badgeKey: "F_WE" }));
   }
 
   return awarded;
 };
 
-// Calculate coins from badge list
 export const calcCoinsFromBadges = (badgeKeys) => {
   return badgeKeys.reduce((sum, key) => sum + (COIN_VALUES[key] || 0), 0);
 };
