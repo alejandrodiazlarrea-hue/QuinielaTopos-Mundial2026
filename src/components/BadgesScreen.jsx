@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BADGE_DEFS } from "../data/badges.js";
-import { C, card, sec, btn } from "./ui.jsx";
+import { C, card, sec } from "./ui.jsx";
 
 export const BadgesScreen = ({ participants, earnedBadges }) => {
   const [selected, setSelected] = useState(null);
@@ -11,7 +11,6 @@ export const BadgesScreen = ({ participants, earnedBadges }) => {
     badgeStats[key] = {
       total: earned.length,
       winners: [...new Set(earned.map(b => b.participant_id))],
-      latest: earned[0]?.earned_at,
     };
   });
 
@@ -22,8 +21,10 @@ export const BadgesScreen = ({ participants, earnedBadges }) => {
     ON_FIRE:      "Si aciertas entre 8 y 10 resultados correctos en la jornada.",
     MODO_BESTIA:  "Si aciertas entre 11 y 13 resultados correctos en la jornada.",
     EN_SU_PRIME:  "Si aciertas 14 o más resultados correctos en la jornada.",
-    GGS:          "Al que acierte el resultado del partido que menos gente acertó.",
-    MIL_IQ:       "Si eres el único en acertar el resultado de un partido.",
+    MIL_IQ:       "Al que acierte el resultado del partido más sorpresivo de la jornada (el que menos gente acertó).",
+    HACKER:       "Si eres el único de todo el grupo en acertar el marcador exacto de un partido.",
+    ALMANAQUE:    "Si aciertas todos los resultados de todos los partidos de un mismo día.",
+    CHATGPT:      "Si no aciertas ningún resultado en todos los partidos de un mismo día.",
     DELULU:       "Al que tenga el pronóstico más alejado de la realidad en cada partido.",
     CASITA:       "Al que acumule más DELULUs en toda la jornada.",
     QUE_BURRO:    "Si eres el único en fallar un resultado que todos los demás acertaron.",
@@ -31,6 +32,7 @@ export const BadgesScreen = ({ participants, earnedBadges }) => {
     CRUZAZULEO:   "Al que termine en segundo lugar de puntos en la jornada.",
     MEJOR_NADOTA: "Al que termine en tercer lugar de puntos en la jornada.",
     F_WE:         "Al que termine en último lugar de puntos en la jornada.",
+    THE_CHOSEN:   "Si aciertas todos los marcadores exactos de todos los partidos de la jornada. Prácticamente imposible — pero si lo logras, eres una leyenda.",
   };
 
   return (
