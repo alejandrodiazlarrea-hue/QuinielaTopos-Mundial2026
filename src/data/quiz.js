@@ -97,7 +97,7 @@ export const QUIZ_QUESTIONS = [
   { category:"Historia", difficulty:"facil", question:"¿Cuántos Mundiales ha ganado Argentina?", options:["1","2","3","4"], correct_index:2 },
   { category:"Selecciones", difficulty:"facil", question:"¿Qué selección tiene el récord de más participaciones en Mundiales sin ganar uno?", options:["México","Países Bajos","Suecia","Bélgica"], correct_index:1 },
   { category:"Cultura", difficulty:"facil", question:"¿Qué significa VAR en fútbol?", options:["Video Assistant Referee","Video Analysis Review","Virtual Assistant Referee","Video Action Replay"], correct_index:0 },
-  { category:"Jugadores", difficulty:"facil", question:"¿Qué portero atajó el penalti de Messi en la final del Mundial 2022?", options:["Courtois","Lloris","Donnarumma","Lloris"], correct_index:1 },
+  { category:"Jugadores", difficulty:"facil", question:"¿Qué portero atajó el penalti de Messi en la final del Mundial 2022?", options:["Courtois","Lloris","Donnarumma","Alisson"], correct_index:1 },
   { category:"Historia", difficulty:"facil", question:"¿Qué país fue sede del Mundial 2006?", options:["Francia","Italia","Alemania","España"], correct_index:2 },
   { category:"Selecciones", difficulty:"facil", question:"¿Cuál es el apodo de la selección de Francia?", options:["Les Bleus","La Furia","Gli Azzurri","La Mannschaft"], correct_index:0 },
   { category:"Cultura", difficulty:"facil", question:"¿Cuántos árbitros hay en un partido de fútbol oficial?", options:["1","2","3","4"], correct_index:3 },
