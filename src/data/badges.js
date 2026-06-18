@@ -1,24 +1,24 @@
 import { ALL_MATCHES, getResult, isExact, isResultCorrect, calcScore } from "../data/matches.js";
 
 export const BADGE_DEFS = {
-  EZ:           { emoji:"⚡",  name:"EZ",                    desc:"Marcador exacto acertado",                         coins:50,     type:"season" },
-  GRITALO:      { emoji:"👑",  name:"Grítalo Reina",         desc:"Más marcadores exactos de la jornada",             coins:80,     type:"dynamic" },
-  SO_HOT:       { emoji:"🔥",  name:"So Hot",                desc:"5-7 resultados correctos en una jornada",          coins:20,     type:"season" },
-  ON_FIRE:      { emoji:"🚒",  name:"On Fire",               desc:"8-10 resultados correctos en una jornada",         coins:40,     type:"season" },
-  MODO_BESTIA:  { emoji:"🐺",  name:"En su Prime",           desc:"11-13 resultados correctos en una jornada",        coins:60,     type:"season" },
-  EN_SU_PRIME:  { emoji:"🌟",  name:"Dios Plan",             desc:"14+ resultados correctos en una jornada",          coins:100,    type:"season" },
-  MIL_IQ:       { emoji:"🧠",  name:"+1000 de IQ",           desc:"Acertó el resultado del partido más sorpresivo",   coins:50,     type:"season" },
-  HACKER:       { emoji:"🧊",  name:"Hacker",                desc:"Único en acertar el marcador exacto de un partido",coins:150,    type:"season" },
-  ALMANAQUE:    { emoji:"📖",  name:"El Almanaque",          desc:"Acertó todos los resultados de un mismo día",      coins:40,     type:"season" },
-  CHATGPT:      { emoji:"🤖",  name:"Ni con ChatGPT",        desc:"No acertó ningún resultado en todo un día",        coins:-10,    type:"season" },
-  DELULU:       { emoji:"🤪",  name:"Delulu",                desc:"Pronóstico más alejado de la realidad del día",    coins:-10,    type:"season" },
-  CASITA:       { emoji:"🏠",  name:"¿Todo bien en casita?", desc:"Más Delulus acumulados en la jornada",             coins:-30,    type:"dynamic" },
-  QUE_BURRO:    { emoji:"🐴",  name:"Que Burro, Póngale 0",  desc:"Único en fallar lo que todos acertaron",           coins:-20,    type:"season" },
-  LA_CABRA:     { emoji:"🐐",  name:"La Cabra",              desc:"Mayor puntaje de la jornada",                      coins:100,    type:"dynamic" },
-  CRUZAZULEO:   { emoji:"🔵",  name:"La Cruzazuleó",         desc:"Segundo lugar de la jornada",                      coins:60,     type:"dynamic" },
-  MEJOR_NADOTA: { emoji:"🗑️", name:"Mejor Nadota",           desc:"Tercer lugar de la jornada",                       coins:20,     type:"dynamic" },
-  F_WE:         { emoji:"💀",  name:"F we",                  desc:"Último lugar de la jornada",                       coins:-40,    type:"dynamic" },
-  THE_CHOSEN:   { emoji:"🌌",  name:"The Chosen One",        desc:"Acertó todos los marcadores exactos de la jornada",coins:100000, type:"season" },
+  EZ:           { emoji:"⚡",  name:"EZ",                    desc:"Marcador exacto acertado",                          coins:50,     type:"season" },
+  GRITALO:      { emoji:"👑",  name:"Grítalo Reina",         desc:"Más marcadores exactos de la jornada",              coins:80,     type:"dynamic" },
+  SO_HOT:       { emoji:"🔥",  name:"So Hot",                desc:"5-7 resultados correctos en una jornada",           coins:20,     type:"season" },
+  ON_FIRE:      { emoji:"🚒",  name:"On Fire",               desc:"8-10 resultados correctos en una jornada",          coins:40,     type:"season" },
+  MODO_BESTIA:  { emoji:"🐺",  name:"En su Prime",           desc:"11-13 resultados correctos en una jornada",         coins:60,     type:"season" },
+  EN_SU_PRIME:  { emoji:"🌟",  name:"Dios Plan",             desc:"14+ resultados correctos en una jornada",           coins:100,    type:"season" },
+  MIL_IQ:       { emoji:"🧠",  name:"+1000 de IQ",           desc:"Acertó el resultado del partido más sorpresivo",    coins:50,     type:"season" },
+  HACKER:       { emoji:"🧊",  name:"Hacker",                desc:"Único en acertar el marcador exacto de un partido", coins:150,    type:"season" },
+  ALMANAQUE:    { emoji:"📖",  name:"El Almanaque",          desc:"Acertó todos los resultados de un mismo día",       coins:40,     type:"season" },
+  CHATGPT:      { emoji:"🤖",  name:"Ni con ChatGPT",        desc:"Peor % de aciertos del día",                        coins:-10,    type:"season" },
+  DELULU:       { emoji:"🤪",  name:"Delulu",                desc:"Pronóstico más alejado de la realidad del día",     coins:-10,    type:"season" },
+  CASITA:       { emoji:"🏠",  name:"¿Todo bien en casita?", desc:"Más Delulus acumulados en la jornada",              coins:-30,    type:"dynamic" },
+  QUE_BURRO:    { emoji:"🐴",  name:"Que Burro, Póngale 0",  desc:"No sumó puntos cuando todos los demás sí sumaron", coins:-20,    type:"season" },
+  LA_CABRA:     { emoji:"🐐",  name:"La Cabra",              desc:"Mayor puntaje de la jornada",                       coins:100,    type:"dynamic" },
+  CRUZAZULEO:   { emoji:"🔵",  name:"La Cruzazuleó",         desc:"Segundo lugar de la jornada",                       coins:60,     type:"dynamic" },
+  MEJOR_NADOTA: { emoji:"🗑️", name:"Mejor Nadota",           desc:"Tercer lugar de la jornada",                        coins:20,     type:"dynamic" },
+  F_WE:         { emoji:"💀",  name:"F we",                  desc:"Último lugar de la jornada",                        coins:-40,    type:"dynamic" },
+  THE_CHOSEN:   { emoji:"🌌",  name:"The Chosen One",        desc:"Acertó todos los marcadores exactos de la jornada", coins:100000, type:"season" },
 };
 
 export const COIN_VALUES = Object.fromEntries(
@@ -65,7 +65,7 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
     });
   }
 
-  // ── Rachas acumulables: se dan todos los que apliquen ──
+  // ── Rachas acumulables ──
   stats.forEach(s => {
     if (s.resultCount >= 5)  awarded.push({ participantId: s.id, badgeKey: "SO_HOT" });
     if (s.resultCount >= 8)  awarded.push({ participantId: s.id, badgeKey: "ON_FIRE" });
@@ -96,16 +96,28 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
     }
   });
 
-  // ── Que Burro: único en fallar lo que todos acertaron ──
+  // ── Que Burro: no sumó puntos cuando todos los demás sí sumaron ──
   finishedMatches.forEach(m => {
-    const fallaron = participants.filter(p => !isResultCorrect((p.predictions||{})[m.id], results[m.id]));
-    const acertaron = participants.filter(p => isResultCorrect((p.predictions||{})[m.id], results[m.id]));
-    if (fallaron.length === 1 && acertaron.length === participants.length - 1) {
-      awarded.push({ participantId: fallaron[0].id, badgeKey: "QUE_BURRO" });
-    }
+    const real = results[m.id];
+    participants.forEach(p => {
+      const pred = (p.predictions||{})[m.id];
+      if (!pred) return;
+      const myPts = calcScore(pred, real);
+      if (myPts !== 0) return;
+      const todosLosDemas = participants.filter(pp => pp.id !== p.id);
+      const todosSumaron = todosLosDemas.every(pp => {
+        const ppPred = (pp.predictions||{})[m.id];
+        if (!ppPred) return false;
+        const ppPts = calcScore(ppPred, real);
+        return ppPts != null && ppPts > 0;
+      });
+      if (todosSumaron) {
+        awarded.push({ participantId: p.id, badgeKey: "QUE_BURRO" });
+      }
+    });
   });
 
-  // ── El Almanaque / Ni con ChatGPT / Delulu: por día ──
+  // ── Por día: Almanaque, Ni con ChatGPT, Delulu ──
   const matchesByDate = {};
   finishedMatches.forEach(m => {
     if (!matchesByDate[m.date]) matchesByDate[m.date] = [];
@@ -118,15 +130,25 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
   Object.entries(matchesByDate).forEach(([date, dayMatches]) => {
     if (dayMatches.length === 0) return;
 
-    participants.forEach(p => {
+    // ── El Almanaque: acertó todos los resultados del día ──
+    // ── Ni con ChatGPT: peor % de aciertos del día ──
+    const dayStats = participants.map(p => {
       const preds = p.predictions || {};
-      const allCorrect = dayMatches.every(m => isResultCorrect(preds[m.id], results[m.id]));
-      const noneCorrect = dayMatches.every(m => !isResultCorrect(preds[m.id], results[m.id]));
-      if (allCorrect) awarded.push({ participantId: p.id, badgeKey: "ALMANAQUE" });
-      if (noneCorrect) awarded.push({ participantId: p.id, badgeKey: "CHATGPT" });
+      const acertados = dayMatches.filter(m => isResultCorrect(preds[m.id], results[m.id])).length;
+      const allCorrect = acertados === dayMatches.length;
+      return { id: p.id, acertados, pct: acertados / dayMatches.length, allCorrect };
     });
 
-    // Delulu del día — el pronóstico más alejado de la realidad
+    dayStats.forEach(s => {
+      if (s.allCorrect) awarded.push({ participantId: s.id, badgeKey: "ALMANAQUE" });
+    });
+
+    const minPct = Math.min(...dayStats.map(s => s.pct));
+    dayStats.filter(s => s.pct === minPct).forEach(s => {
+      awarded.push({ participantId: s.id, badgeKey: "CHATGPT" });
+    });
+
+    // ── Delulu del día: pronóstico más alejado de la realidad ──
     let maxDist = -1;
     let deluluPids = [];
     dayMatches.forEach(m => {
