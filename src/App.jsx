@@ -691,12 +691,19 @@ export default function QuinielaMundial() {
       const coinsToSave=i===answers.length-1?ans.coinsEarned+perfectBonus:ans.coinsEarned;
       await db.insertQuizAnswer(activeParticipantId,ans.questionId,date,ans.selectedIndex,ans.isCorrect,coinsToSave,quizLabel);
     }
-    const current=coins.find(c=>c.participant_id===activeParticipantId)?.total||0;
-    await db.upsertCoins(activeParticipantId,current+coinsEarned);
+
+    // Recalcular total desde cero — badge coins + quiz coins
+    const allBadges=await db.getBadges();
+    const pBadgeKeys=allBadges.filter(b=>b.participant_id===activeParticipantId).map(b=>b.badge_key);
+    const badgeCoins=calcCoinsFromBadges(pBadgeKeys);
+    const quizRows=await db.getQuizAnswersByParticipant(activeParticipantId);
+    const quizCoins=quizRows.reduce((sum,r)=>sum+(r.coins_earned||0),0);
+    await db.upsertCoins(activeParticipantId,badgeCoins+quizCoins);
+
     const newCoins=await db.getCoins();
     setCoins(newCoins);
     if(activeParticipantId) db.getQuizAnswersByParticipant(activeParticipantId).then(ans=>setMyQuizAnswers(ans||[]));
-  },[activeParticipantId,coins]);
+  },[activeParticipantId]);
 
   const handleUpsertScorer=useCallback(async(scorer)=>{
     await db.upsertScorer(scorer);
