@@ -9,8 +9,6 @@ import { MundialScreen } from "./components/MundialScreen.jsx";
 import { TendenciasScreen } from "./components/TendenciasScreen.jsx";
 import { QuizScreen } from "./components/QuizScreen.jsx";
 
-// ─── HOME ─────────────────────────────────────────────────────────────────────
-
 const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,passInput,setPassInput,passError,handleNewParticipant,handleAdminLogin,handleSelectParticipant,setScreen,openJornadas}) => (
   <div style={{maxWidth:520,margin:"0 auto",padding:"24px 16px"}}>
     <div style={{textAlign:"center",marginBottom:24}}>
@@ -57,8 +55,6 @@ const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,p
     </div>
   </div>
 );
-
-// ─── ADMIN ────────────────────────────────────────────────────────────────────
 
 const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultChange,toggleJornada,newAdminPass,setNewAdminPass,handleChangePass,ranking,handleDeleteParticipant,handleCalcBadges,quizOpenDates,handleQuizToggle,handleRenameParticipant}) => {
   const [gFilter,setGFilter]=useState("Todos");
@@ -214,8 +210,6 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
   );
 };
 
-// ─── PARTICIPANT ──────────────────────────────────────────────────────────────
-
 const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,handlePredChange,savePredictions,savedMsg,ranking,activeParticipantId,earnedBadges,coins}) => {
   if (!activeParticipant) return null;
   const [savedJ,setSavedJ]=useState(null);
@@ -328,8 +322,6 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
     </div>
   );
 };
-
-// ─── RANKING ──────────────────────────────────────────────────────────────────
 
 const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,coins}) => {
   const medals=["🥇","🥈","🥉"];
@@ -444,8 +436,6 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
   );
 };
 
-// ─── PRONÓSTICOS ──────────────────────────────────────────────────────────────
-
 const PronosticosScreen = ({participants,results}) => {
   const [jFilter,setJFilter]=useState(1);
   const [gFilter,setGFilter]=useState("Todos");
@@ -513,8 +503,6 @@ const PronosticosScreen = ({participants,results}) => {
     </div>
   );
 };
-
-// ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 export default function QuinielaMundial() {
   const [screen,setScreen]=useState("home");
@@ -655,21 +643,20 @@ export default function QuinielaMundial() {
     }
     const allBadges=await db.getBadges();
     setEarnedBadges(allBadges);
+
     for(const p of participants){
       const pBadgeKeys=allBadges.filter(b=>b.participant_id===p.id).map(b=>b.badge_key);
       const badgeCoins=calcCoinsFromBadges(pBadgeKeys);
       const quizRows=await db.getQuizAnswersByParticipant(p.id);
-      const quizCoins=[...new Set(quizRows.map(r=>r.quiz_label))].reduce((sum,label)=>{
-        const labelRows=quizRows.filter(r=>r.quiz_label===label);
-        return sum+labelRows.reduce((s,r)=>s+(r.coins_earned||0),0);
-      },0);
+      const quizCoins=quizRows.reduce((sum,r)=>sum+(r.coins_earned||0),0);
       const total=badgeCoins+quizCoins;
       await db.upsertCoins(p.id,total);
     }
+
     const newCoins=await db.getCoins();
     setCoins(newCoins);
     flash(`✅ Badges de Jornada ${jornada} calculados`);
-  },[participants,results,coins]);
+  },[participants,results]);
 
   const handleQuizToggle=useCallback(async(label)=>{
     const updated=quizOpenDates.includes(label)?quizOpenDates.filter(d=>d!==label):[...quizOpenDates,label];
