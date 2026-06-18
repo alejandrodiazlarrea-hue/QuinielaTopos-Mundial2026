@@ -11,7 +11,7 @@ export const BADGE_DEFS = {
   HACKER:       { emoji:"🧊",  name:"Hacker",                desc:"Único en acertar el marcador exacto de un partido",coins:150,    type:"season" },
   ALMANAQUE:    { emoji:"📖",  name:"El Almanaque",          desc:"Acertó todos los resultados de un mismo día",      coins:40,     type:"season" },
   CHATGPT:      { emoji:"🤖",  name:"Ni con ChatGPT",        desc:"No acertó ningún resultado en todo un día",        coins:-10,    type:"season" },
-  DELULU:       { emoji:"🤪",  name:"Delulu",                desc:"Pronóstico más alejado de la realidad por partido",coins:-10,    type:"season" },
+  DELULU:       { emoji:"🤪",  name:"Delulu",                desc:"Pronóstico más alejado de la realidad del día",    coins:-10,    type:"season" },
   CASITA:       { emoji:"🏠",  name:"¿Todo bien en casita?", desc:"Más Delulus acumulados en la jornada",             coins:-30,    type:"dynamic" },
   QUE_BURRO:    { emoji:"🐴",  name:"Que Burro, Póngale 0",  desc:"Único en fallar lo que todos acertaron",           coins:-20,    type:"season" },
   LA_CABRA:     { emoji:"🐐",  name:"La Cabra",              desc:"Mayor puntaje de la jornada",                      coins:100,    type:"dynamic" },
@@ -65,17 +65,12 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
     });
   }
 
-  // ── So Hot / On Fire / En su Prime / Dios Plan ──
+  // ── Rachas acumulables: se dan todos los que apliquen ──
   stats.forEach(s => {
-    if (s.resultCount >= 14) {
-      awarded.push({ participantId: s.id, badgeKey: "EN_SU_PRIME" });
-    } else if (s.resultCount >= 11) {
-      awarded.push({ participantId: s.id, badgeKey: "MODO_BESTIA" });
-    } else if (s.resultCount >= 8) {
-      awarded.push({ participantId: s.id, badgeKey: "ON_FIRE" });
-    } else if (s.resultCount >= 5) {
-      awarded.push({ participantId: s.id, badgeKey: "SO_HOT" });
-    }
+    if (s.resultCount >= 5)  awarded.push({ participantId: s.id, badgeKey: "SO_HOT" });
+    if (s.resultCount >= 8)  awarded.push({ participantId: s.id, badgeKey: "ON_FIRE" });
+    if (s.resultCount >= 11) awarded.push({ participantId: s.id, badgeKey: "MODO_BESTIA" });
+    if (s.resultCount >= 14) awarded.push({ participantId: s.id, badgeKey: "EN_SU_PRIME" });
   });
 
   // ── +1000 IQ: acertó el resultado del partido más sorpresivo ──
@@ -110,15 +105,19 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
     }
   });
 
-  // ── El Almanaque / Ni con ChatGPT: por día ──
+  // ── El Almanaque / Ni con ChatGPT / Delulu: por día ──
   const matchesByDate = {};
   finishedMatches.forEach(m => {
     if (!matchesByDate[m.date]) matchesByDate[m.date] = [];
     matchesByDate[m.date].push(m);
   });
 
+  const deluluCounts = {};
+  participants.forEach(p => { deluluCounts[p.id] = 0; });
+
   Object.entries(matchesByDate).forEach(([date, dayMatches]) => {
     if (dayMatches.length === 0) return;
+
     participants.forEach(p => {
       const preds = p.predictions || {};
       const allCorrect = dayMatches.every(m => isResultCorrect(preds[m.id], results[m.id]));
@@ -126,23 +125,21 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
       if (allCorrect) awarded.push({ participantId: p.id, badgeKey: "ALMANAQUE" });
       if (noneCorrect) awarded.push({ participantId: p.id, badgeKey: "CHATGPT" });
     });
-  });
 
-  // ── DELULU: pronóstico más alejado de la realidad por partido ──
-  const deluluCounts = {};
-  participants.forEach(p => { deluluCounts[p.id] = 0; });
-
-  finishedMatches.forEach(m => {
-    const real = results[m.id];
+    // Delulu del día — el pronóstico más alejado de la realidad
     let maxDist = -1;
     let deluluPids = [];
-    participants.forEach(p => {
-      const pred = (p.predictions||{})[m.id];
-      if (!pred || pred.home == null || isResultCorrect(pred, real)) return;
-      const dist = Math.abs(Number(pred.home) - real.homeGoals) + Math.abs(Number(pred.away) - real.awayGoals);
-      if (dist > maxDist) { maxDist = dist; deluluPids = [p.id]; }
-      else if (dist === maxDist) { deluluPids.push(p.id); }
+    dayMatches.forEach(m => {
+      const real = results[m.id];
+      participants.forEach(p => {
+        const pred = (p.predictions||{})[m.id];
+        if (!pred || pred.home == null || isResultCorrect(pred, real)) return;
+        const dist = Math.abs(Number(pred.home) - real.homeGoals) + Math.abs(Number(pred.away) - real.awayGoals);
+        if (dist > maxDist) { maxDist = dist; deluluPids = [p.id]; }
+        else if (dist === maxDist) { deluluPids.push(p.id); }
+      });
     });
+
     if (maxDist > 0) {
       deluluPids.forEach(pid => {
         awarded.push({ participantId: pid, badgeKey: "DELULU" });
