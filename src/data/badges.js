@@ -10,7 +10,7 @@ export const BADGE_DEFS = {
   MIL_IQ:       { emoji:"🧠",  name:"+1000 de IQ",           desc:"Acertó el resultado del partido más sorpresivo",    coins:50,     type:"season" },
   HACKER:       { emoji:"🧊",  name:"Hacker",                desc:"Único en acertar el marcador exacto de un partido", coins:150,    type:"season" },
   ALMANAQUE:    { emoji:"📖",  name:"El Almanaque",          desc:"Acertó todos los resultados de un mismo día",       coins:40,     type:"season" },
-  CHATGPT:      { emoji:"🤖",  name:"Ni con ChatGPT",        desc:"Peor % de aciertos del día",                        coins:-10,    type:"season" },
+  CHATGPT:      { emoji:"🤖",  name:"Ni con ChatGPT",        desc:"Único con el peor % de aciertos del día",           coins:-10,    type:"season" },
   DELULU:       { emoji:"🤪",  name:"Delulu",                desc:"Pronóstico más alejado de la realidad del día",     coins:-10,    type:"season" },
   CASITA:       { emoji:"🏠",  name:"¿Todo bien en casita?", desc:"Más Delulus acumulados en la jornada",              coins:-30,    type:"dynamic" },
   QUE_BURRO:    { emoji:"🐴",  name:"Que Burro, Póngale 0",  desc:"No sumó puntos cuando todos los demás sí sumaron", coins:-20,    type:"season" },
@@ -130,8 +130,6 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
   Object.entries(matchesByDate).forEach(([date, dayMatches]) => {
     if (dayMatches.length === 0) return;
 
-    // ── El Almanaque: acertó todos los resultados del día ──
-    // ── Ni con ChatGPT: peor % de aciertos del día ──
     const dayStats = participants.map(p => {
       const preds = p.predictions || {};
       const acertados = dayMatches.filter(m => isResultCorrect(preds[m.id], results[m.id])).length;
@@ -139,14 +137,17 @@ export const calcBadgesForJornada = (jornada, participants, results) => {
       return { id: p.id, acertados, pct: acertados / dayMatches.length, allCorrect };
     });
 
+    // ── El Almanaque: acertó todos los resultados del día ──
     dayStats.forEach(s => {
       if (s.allCorrect) awarded.push({ participantId: s.id, badgeKey: "ALMANAQUE" });
     });
 
+    // ── Ni con ChatGPT: único con el peor % de aciertos del día ──
     const minPct = Math.min(...dayStats.map(s => s.pct));
-    dayStats.filter(s => s.pct === minPct).forEach(s => {
-      awarded.push({ participantId: s.id, badgeKey: "CHATGPT" });
-    });
+    const peores = dayStats.filter(s => s.pct === minPct);
+    if (peores.length === 1) {
+      awarded.push({ participantId: peores[0].id, badgeKey: "CHATGPT" });
+    }
 
     // ── Delulu del día: pronóstico más alejado de la realidad ──
     let maxDist = -1;
