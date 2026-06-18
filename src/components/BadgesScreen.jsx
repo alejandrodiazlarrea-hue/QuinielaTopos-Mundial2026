@@ -25,7 +25,7 @@ export const BadgesScreen = ({ participants, earnedBadges }) => {
     HACKER:       "Si eres el único de todo el grupo en acertar el marcador exacto de un partido.",
     ALMANAQUE:    "Si aciertas todos los resultados de todos los partidos de un mismo día.",
     CHATGPT:      "Si no aciertas ningún resultado en todos los partidos de un mismo día.",
-    DELULU:       "Al que tenga el pronóstico más alejado de la realidad en cada partido.",
+    DELULU: "Al que tenga el pronóstico más alejado de la realidad en todos los partidos de un mismo día.",
     CASITA:       "Al que acumule más DELULUs en toda la jornada.",
     QUE_BURRO:    "Si eres el único en fallar un resultado que todos los demás acertaron.",
     LA_CABRA:     "Al que termine en primer lugar de puntos en la jornada.",
