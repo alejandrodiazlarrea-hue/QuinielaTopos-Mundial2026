@@ -105,7 +105,7 @@ export const QUIZ_QUESTIONS = [
 
   // ── NUEVAS MEDIAS ────────────────────────────────────────────────────────────
   { category:"Historia", difficulty:"media", question:"¿En qué año debutó Messi en un Mundial?", options:["2002","2006","2010","2014"], correct_index:1 },
-  { category:"Historia", difficulty:"media", question:"¿Qué selección eliminó a México en el Mundial de Rusia 2018?", options:["Alemania","Brasil","Argentina","Brasil"], correct_index:1 },
+  { category:"Historia", difficulty:"media", question:"¿Qué selección eliminó a México en el Mundial de Rusia 2018?", options:["Alemania","Brasil","Argentina","Suecia"], correct_index:1 },
   { category:"Jugadores", difficulty:"media", question:"¿Cuántos goles marcó Ronaldo Nazário en Mundiales?", options:["12","13","14","15"], correct_index:3 },
   { category:"Momentos", difficulty:"media", question:"¿Cómo se llama el estadio donde se jugó la final del Mundial 2022?", options:["Al Bayt","Lusail","Education City","Al Janoub"], correct_index:1 },
   { category:"Selecciones", difficulty:"media", question:"¿Qué selección africana llegó a semifinales en el Mundial 2002?", options:["Nigeria","Camerún","Senegal","Costa de Marfil"], correct_index:2 },
