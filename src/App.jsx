@@ -212,12 +212,19 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
   );
 };
 
-// Componente separado para cada partido de eliminatoria en Mi Quiniela
 const KnockoutMatchRow = ({m, myPred, onSave}) => {
   const [localH, setLocalH] = useState(myPred?.home_goals ?? "");
   const [localA, setLocalA] = useState(myPred?.away_goals ?? "");
   const [localQ, setLocalQ] = useState(myPred?.qualifier ?? null);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (myPred) {
+      setLocalH(myPred.home_goals ?? "");
+      setLocalA(myPred.away_goals ?? "");
+      setLocalQ(myPred.qualifier ?? null);
+    }
+  }, [myPred?.home_goals, myPred?.away_goals, myPred?.qualifier]);
 
   const hasResult = m.home_goals != null && m.away_goals != null;
   const pts = hasResult && myPred ? calcKnockoutScore(myPred, m) : null;
@@ -366,7 +373,6 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
         </div>
       )}
 
-      {/* Tabs */}
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
         <button style={{...btn(activeTab==="grupos"?"primary":"outline"),fontSize:13}} onClick={()=>setActiveTab("grupos")}>
           ⚽ Fase de Grupos
@@ -378,7 +384,6 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
         )}
       </div>
 
-      {/* GRUPOS */}
       {activeTab==="grupos"&&(
         available.length===0?(
           <div style={{...card,textAlign:"center",padding:40}}>
@@ -436,7 +441,6 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
         )
       )}
 
-      {/* ELIMINATORIAS */}
       {activeTab==="eliminatorias"&&(
         <div>
           {roundsWithOpen.length>1&&(
@@ -467,7 +471,7 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
 
 const RankingScreen = ({ranking,results,knockoutMatches,knockoutPredictions,participants,openJornadas,earnedBadges,coins}) => {
   const medals=["🥇","🥈","🥉"];
-  const [tooltip, setTooltip] = useState(null);
+  const [tooltip,setTooltip]=useState(null);
   const maxPts=ranking[0]?.total||1;
   const jugados=Object.values(results).filter(r=>r.homeGoals!=null).length;
   const getTruePos=(p)=>[...new Set(ranking.map(r=>r.total))].filter(pts=>pts>p.total).length+1;
