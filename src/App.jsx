@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { db } from "./lib/supabase.js";
 import { ALL_MATCHES, FLAGS, ABBR, calcScore, isExact, isResultCorrect, getResult } from "./data/matches.js";
 import { BADGE_DEFS, calcBadgesForJornada, calcCoinsFromBadges } from "./data/badges.js";
-import { calcKnockoutScore } from "./data/knockout.js";
+import { calcKnockoutScore, KNOCKOUT_ROUNDS, ROUND_LABELS, formatKnockoutDate } from "./data/knockout.js";
 import { C, inp, card, sec, row, btn, pill, ScoreInput, DateHeader, Flash, CountdownBanner, PasswordModal } from "./components/ui.jsx";
 import { BadgesScreen } from "./components/BadgesScreen.jsx";
 import { ProfileScreen } from "./components/ProfileScreen.jsx";
@@ -212,9 +212,13 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
   );
 };
 
-const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,handlePredChange,savePredictions,savedMsg,ranking,activeParticipantId,earnedBadges,coins}) => {
+const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,handlePredChange,savePredictions,savedMsg,ranking,activeParticipantId,earnedBadges,coins,knockoutMatches,knockoutPreds,onSaveKnockoutPred}) => {
   if (!activeParticipant) return null;
   const [savedJ,setSavedJ]=useState(null);
+  const [activeTab,setActiveTab]=useState("grupos");
+  const [knockoutRound,setKnockoutRound]=useState("16avos");
+  const [predInputs,setPredInputs]=useState({});
+
   const openJs=Object.entries(openJornadas).filter(([,v])=>v).map(([k])=>Number(k));
   const available=ALL_MATCHES.filter(m=>openJs.includes(m.jornada));
   const dateLabelRange={1:"11–17 Jun",2:"18–23 Jun",3:"24–27 Jun"};
@@ -223,14 +227,41 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
 
   const handleSave=async(j)=>{ await savePredictions(); setSavedJ(j); setTimeout(()=>setSavedJ(null),3000); };
 
+  const getMyKPred=(matchId)=>knockoutPreds.find(p=>p.match_id===matchId);
+
+  const getPredLocal=(matchId,field,myPred)=>{
+    const key=`${matchId}_${field}`;
+    if(predInputs[key]!==undefined) return predInputs[key];
+    if(myPred?.[field]!=null) return myPred[field];
+    return "";
+  };
+
+  const setPredLocal=(matchId,field,value)=>{
+    setPredInputs(prev=>({...prev,[`${matchId}_${field}`]:value}));
+  };
+
+  const localIsDrawn=(matchId,myPred)=>{
+    const h=predInputs[`${matchId}_home_goals`]!==undefined?predInputs[`${matchId}_home_goals`]:myPred?.home_goals;
+    const a=predInputs[`${matchId}_away_goals`]!==undefined?predInputs[`${matchId}_away_goals`]:myPred?.away_goals;
+    return h!==""&&h!=null&&a!==""&&a!=null&&Number(h)===Number(a);
+  };
+
+  const saveKPredLocal=(matchId,myPred,overrides={})=>{
+    const homeGoals=overrides.home_goals!==undefined?overrides.home_goals:(predInputs[`${matchId}_home_goals`]!==undefined?predInputs[`${matchId}_home_goals`]:myPred?.home_goals);
+    const awayGoals=overrides.away_goals!==undefined?overrides.away_goals:(predInputs[`${matchId}_away_goals`]!==undefined?predInputs[`${matchId}_away_goals`]:myPred?.away_goals);
+    const qualifier=overrides.qualifier!==undefined?overrides.qualifier:(predInputs[`${matchId}_qualifier`]!==undefined?predInputs[`${matchId}_qualifier`]:myPred?.qualifier??null);
+    if(homeGoals==null||homeGoals==="") return;
+    onSaveKnockoutPred(matchId,{home_goals:homeGoals,away_goals:awayGoals,qualifier});
+  };
+
+  const openKnockoutMatches=knockoutMatches.filter(m=>m.is_open&&m.home!=="A definir"&&m.away!=="A definir");
+  const roundsWithOpen=KNOCKOUT_ROUNDS.filter(r=>knockoutMatches.some(m=>m.round===r&&m.is_open));
+
   return (
     <div style={{maxWidth:700,margin:"0 auto",padding:"20px 16px"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
         <div>
           <div style={{fontSize:20,fontWeight:900}}>Hola, <span style={{color:C.red}}>{activeParticipant.name}</span></div>
-          <div style={{fontSize:12,color:"#888"}}>
-            {openJs.length>0?`Jornada(s) disponible(s): ${openJs.map(j=>"J"+j).join(", ")}`:"No hay jornadas abiertas."}
-          </div>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}><Flash msg={savedMsg}/></div>
       </div>
@@ -267,59 +298,178 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
         </div>
       )}
 
-      {available.length===0?(
-        <div style={{...card,textAlign:"center",padding:40}}>
-          <div style={{fontSize:40,marginBottom:12}}>🔒</div>
-          <div style={{color:"#888"}}>No hay jornadas abiertas. El admin las abrirá cuando sea momento.</div>
-        </div>
-      ):(
-        [1,2,3].map(j=>{
-          if(!openJornadas[j]) return null;
-          const jMatches=available.filter(m=>m.jornada===j);
-          const byDate=jMatches.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
-          return (
-            <div key={j} style={card}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-                <div style={sec}>Jornada {j} <span style={{color:"#555",fontSize:11,letterSpacing:0}}>· {dateLabelRange[j]}</span></div>
-                <button style={{...btn(savedJ===j?"success":"primary"),padding:"6px 14px",fontSize:13,transition:"all .3s",minWidth:100}} onClick={()=>handleSave(j)}>
-                  {savedJ===j?"✅ Guardado":`Guardar J${j}`}
-                </button>
-              </div>
-              {Object.entries(byDate).map(([date,matches])=>(
-                <div key={date}>
-                  <DateHeader dateStr={date}/>
-                  {matches.map(m=>{
-                    const pred=currentPreds[m.id]||{};
-                    const r=results[m.id];
-                    const done=r&&r.homeGoals!=null&&r.awayGoals!=null;
-                    const pts=done?calcScore(pred,r):null;
-                    return (
-                      <div key={m.id} style={{...row,flexDirection:"column",alignItems:"stretch",gap:4}}>
-                        <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
-                          <span style={pill("#0f2d6e")}>G{m.group}</span>
-                          <span style={{fontSize:11,color:"#666"}}>{m.time}</span>
-                          {m.venue&&<span style={{fontSize:10,color:"#555"}}>📍 {m.venue}</span>}
-                        </div>
-                        <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
-                          <span style={{fontSize:13,color:"#ccc",fontWeight:600,minWidth:52,textAlign:"right"}}>{FLAGS[m.home]||"🏳️"} {ABBR[m.home]||m.home}</span>
-                          <ScoreInput value={pred.home} onChange={v=>handlePredChange(m.id,"home",v)} disabled={done}/>
-                          <span style={{color:"#555",fontSize:12}}>-</span>
-                          <ScoreInput value={pred.away} onChange={v=>handlePredChange(m.id,"away",v)} disabled={done}/>
-                          <span style={{fontSize:13,color:"#ccc",fontWeight:600,minWidth:52}}>{ABBR[m.away]||m.away} {FLAGS[m.away]||"🏳️"}</span>
-                          {done&&pts!==null&&(
-                            <span style={{...pill(pts===5?"#1b7f4a":pts===0?"#7f1b1b":"#7f5a00"),minWidth:36,textAlign:"center"}}>
-                              {pts}pt{pts!==1?"s":""}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+      {/* Tabs grupos / eliminatorias */}
+      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+        <button style={{...btn(activeTab==="grupos"?"primary":"outline"),fontSize:13}} onClick={()=>setActiveTab("grupos")}>
+          ⚽ Fase de Grupos
+        </button>
+        {openKnockoutMatches.length>0&&(
+          <button style={{...btn(activeTab==="eliminatorias"?"primary":"outline"),fontSize:13}} onClick={()=>setActiveTab("eliminatorias")}>
+            🏆 Eliminatorias
+          </button>
+        )}
+      </div>
+
+      {/* GRUPOS */}
+      {activeTab==="grupos"&&(
+        available.length===0?(
+          <div style={{...card,textAlign:"center",padding:40}}>
+            <div style={{fontSize:40,marginBottom:12}}>🔒</div>
+            <div style={{color:"#888"}}>No hay jornadas abiertas.</div>
+          </div>
+        ):(
+          [1,2,3].map(j=>{
+            if(!openJornadas[j]) return null;
+            const jMatches=available.filter(m=>m.jornada===j);
+            const byDate=jMatches.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
+            return (
+              <div key={j} style={card}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                  <div style={sec}>Jornada {j} <span style={{color:"#555",fontSize:11,letterSpacing:0}}>· {dateLabelRange[j]}</span></div>
+                  <button style={{...btn(savedJ===j?"success":"primary"),padding:"6px 14px",fontSize:13,transition:"all .3s",minWidth:100}} onClick={()=>handleSave(j)}>
+                    {savedJ===j?"✅ Guardado":`Guardar J${j}`}
+                  </button>
                 </div>
+                {Object.entries(byDate).map(([date,matches])=>(
+                  <div key={date}>
+                    <DateHeader dateStr={date}/>
+                    {matches.map(m=>{
+                      const pred=currentPreds[m.id]||{};
+                      const r=results[m.id];
+                      const done=r&&r.homeGoals!=null&&r.awayGoals!=null;
+                      const pts=done?calcScore(pred,r):null;
+                      return (
+                        <div key={m.id} style={{...row,flexDirection:"column",alignItems:"stretch",gap:4}}>
+                          <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+                            <span style={pill("#0f2d6e")}>G{m.group}</span>
+                            <span style={{fontSize:11,color:"#666"}}>{m.time}</span>
+                            {m.venue&&<span style={{fontSize:10,color:"#555"}}>📍 {m.venue}</span>}
+                          </div>
+                          <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
+                            <span style={{fontSize:13,color:"#ccc",fontWeight:600,minWidth:52,textAlign:"right"}}>{FLAGS[m.home]||"🏳️"} {ABBR[m.home]||m.home}</span>
+                            <ScoreInput value={pred.home} onChange={v=>handlePredChange(m.id,"home",v)} disabled={done}/>
+                            <span style={{color:"#555",fontSize:12}}>-</span>
+                            <ScoreInput value={pred.away} onChange={v=>handlePredChange(m.id,"away",v)} disabled={done}/>
+                            <span style={{fontSize:13,color:"#ccc",fontWeight:600,minWidth:52}}>{ABBR[m.away]||m.away} {FLAGS[m.away]||"🏳️"}</span>
+                            {done&&pts!==null&&(
+                              <span style={{...pill(pts===5?"#1b7f4a":pts===0?"#7f1b1b":"#7f5a00"),minWidth:36,textAlign:"center"}}>
+                                {pts}pt{pts!==1?"s":""}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            );
+          })
+        )
+      )}
+
+      {/* ELIMINATORIAS */}
+      {activeTab==="eliminatorias"&&(
+        <div>
+          {roundsWithOpen.length>1&&(
+            <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+              {roundsWithOpen.map(r=>(
+                <button key={r} style={{...btn(knockoutRound===r?"primary":"outline"),fontSize:11,padding:"6px 10px"}} onClick={()=>setKnockoutRound(r)}>
+                  {ROUND_LABELS[r]}
+                </button>
               ))}
             </div>
-          );
-        })
+          )}
+          {knockoutMatches.filter(m=>m.round===knockoutRound&&m.is_open&&m.home!=="A definir"&&m.away!=="A definir").map(m=>{
+            const myPred=getMyKPred(m.id);
+            const hasResult=m.home_goals!=null&&m.away_goals!=null;
+            const pts=hasResult&&myPred?calcKnockoutScore(myPred,m):null;
+            const drawn=localIsDrawn(m.id,myPred);
+            const localQ=predInputs[`${m.id}_qualifier`]!==undefined?predInputs[`${m.id}_qualifier`]:myPred?.qualifier;
+
+            return (
+              <div key={m.id} style={{...card,marginBottom:10,padding:"14px 16px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                  <span style={pill("#0f2d6e")}>#{m.id}</span>
+                  <span style={{fontSize:11,color:"#666"}}>{m.time} CDMX</span>
+                  <span style={{fontSize:10,color:"#555"}}>📍 {m.venue}</span>
+                  {hasResult&&<span style={{...pill("#1b7f4a"),fontSize:11}}>Final</span>}
+                  {!hasResult&&<span style={{...pill("#1b7f4a"),fontSize:11}}>🟢 Abierto</span>}
+                </div>
+
+                <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:12}}>
+                  <div style={{fontWeight:700,fontSize:15,textAlign:"right",minWidth:100}}>
+                    {FLAGS[m.home]||"🏳️"} {ABBR[m.home]||m.home}
+                  </div>
+                  {hasResult?(
+                    <div style={{textAlign:"center"}}>
+                      <div style={{fontWeight:900,fontSize:18,color:C.red}}>{m.home_goals} - {m.away_goals}</div>
+                      {m.qualifier&&<div style={{fontSize:11,color:"#4ade80",marginTop:4}}>Clasifica: {FLAGS[m.qualifier]||""} {ABBR[m.qualifier]||m.qualifier}</div>}
+                    </div>
+                  ):(
+                    <div style={{fontWeight:700,fontSize:14,color:"#555"}}>vs</div>
+                  )}
+                  <div style={{fontWeight:700,fontSize:15,textAlign:"left",minWidth:100}}>
+                    {FLAGS[m.away]||"🏳️"} {ABBR[m.away]||m.away}
+                  </div>
+                </div>
+
+                <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",paddingTop:10}}>
+                  <div style={{fontSize:12,color:"#888",marginBottom:8}}>Tu pronóstico (90 min)</div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    <span style={{fontSize:13,color:"#ccc",fontWeight:600}}>{ABBR[m.home]||m.home}</span>
+                    <ScoreInput
+                      value={getPredLocal(m.id,"home_goals",myPred)}
+                      onChange={v=>{
+                        setPredLocal(m.id,"home_goals",v);
+                        saveKPredLocal(m.id,myPred,{home_goals:v});
+                      }}
+                      disabled={hasResult}
+                    />
+                    <span style={{color:"#555"}}>-</span>
+                    <ScoreInput
+                      value={getPredLocal(m.id,"away_goals",myPred)}
+                      onChange={v=>{
+                        setPredLocal(m.id,"away_goals",v);
+                        saveKPredLocal(m.id,myPred,{away_goals:v});
+                      }}
+                      disabled={hasResult}
+                    />
+                    <span style={{fontSize:13,color:"#ccc",fontWeight:600}}>{ABBR[m.away]||m.away}</span>
+                  </div>
+
+                  {drawn&&!hasResult&&(
+                    <div style={{marginTop:10}}>
+                      <div style={{fontSize:12,color:"#888",marginBottom:6}}>¿Quién clasifica?</div>
+                      <div style={{display:"flex",gap:8}}>
+                        {[m.home,m.away].map(team=>(
+                          <button key={team}
+                            style={{
+                              background:localQ===team?C.red:"rgba(255,255,255,0.05)",
+                              border:`1px solid ${localQ===team?C.red:"#333"}`,
+                              borderRadius:8,color:"#fff",padding:"8px 14px",cursor:"pointer",fontSize:13,fontWeight:600
+                            }}
+                            onClick={()=>{
+                              setPredLocal(m.id,"qualifier",team);
+                              saveKPredLocal(m.id,myPred,{qualifier:team});
+                            }}>
+                            {FLAGS[team]||"🏳️"} {ABBR[team]||team}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {pts!==null&&(
+                    <div style={{marginTop:8}}>
+                      <span style={{...pill(pts>=5?"#1b7f4a":pts===0?"#7f1b1b":"#7f5a00"),fontSize:12}}>{pts}pts</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -414,13 +564,13 @@ const RankingScreen = ({ranking,results,knockoutMatches,knockoutPredictions,part
                   </div>
                 );
               })}
-              {(() => {
-                const kPts = knockoutMatches.filter(m=>m.home_goals!=null).reduce((acc,m)=>{
-                  const pred = knockoutPredictions.find(pr=>pr.participant_id===p.id&&pr.match_id===m.id);
+              {(()=>{
+                const kPts=knockoutMatches.filter(m=>m.home_goals!=null).reduce((acc,m)=>{
+                  const pred=knockoutPredictions.find(pr=>pr.participant_id===p.id&&pr.match_id===m.id);
                   if(pred){const pts=calcKnockoutScore(pred,m);if(pts!=null)acc+=pts;}
                   return acc;
                 },0);
-                const kPlayed = knockoutMatches.filter(m=>m.home_goals!=null&&knockoutPredictions.find(pr=>pr.participant_id===p.id&&pr.match_id===m.id)).length;
+                const kPlayed=knockoutMatches.filter(m=>m.home_goals!=null&&knockoutPredictions.find(pr=>pr.participant_id===p.id&&pr.match_id===m.id)).length;
                 if(kPlayed===0) return null;
                 return (
                   <div style={{background:"rgba(255,255,255,0.05)",borderRadius:6,padding:"4px 10px",textAlign:"center",minWidth:70}}>
@@ -454,58 +604,132 @@ const RankingScreen = ({ranking,results,knockoutMatches,knockoutPredictions,part
   );
 };
 
-const PronosticosScreen = ({participants,results}) => {
+const PronosticosScreen = ({participants,results,knockoutMatches,knockoutPredictions}) => {
+  const [tab,setTab]=useState("grupos");
   const [jFilter,setJFilter]=useState(1);
   const [gFilter,setGFilter]=useState("Todos");
+  const [roundFilter,setRoundFilter]=useState("16avos");
   const groups=[...new Set(ALL_MATCHES.map(m=>m.group))];
   const jMatches=ALL_MATCHES.filter(m=>m.jornada===jFilter&&(gFilter==="Todos"||m.group===gFilter));
   const byDate=jMatches.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
+  const roundsWithMatches=KNOCKOUT_ROUNDS.filter(r=>knockoutMatches.some(m=>m.round===r));
 
   return (
     <div style={{maxWidth:760,margin:"0 auto",padding:"20px 16px"}}>
       <div style={{fontSize:22,fontWeight:900,marginBottom:4}}>📋 Pronósticos <span style={{color:C.red}}>de Todos</span></div>
       <div style={{fontSize:12,color:"#888",marginBottom:16}}>Pronósticos de todos los participantes</div>
+
+      {/* Tab grupos / eliminatorias */}
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-        {[1,2,3].map(j=>(
-          <button key={j} style={{...btn(jFilter===j?"primary":"outline"),padding:"8px 16px",fontSize:13}} onClick={()=>setJFilter(j)}>Jornada {j}</button>
-        ))}
-        <select style={{...inp,width:"auto"}} value={gFilter} onChange={e=>setGFilter(e.target.value)}>
-          <option value="Todos">Todos los grupos</option>
-          {groups.map(g=><option key={g} value={g}>Grupo {g}</option>)}
-        </select>
+        <button style={{...btn(tab==="grupos"?"primary":"outline"),fontSize:13}} onClick={()=>setTab("grupos")}>⚽ Grupos</button>
+        <button style={{...btn(tab==="eliminatorias"?"primary":"outline"),fontSize:13}} onClick={()=>setTab("eliminatorias")}>🏆 Eliminatorias</button>
       </div>
-      {Object.entries(byDate).map(([date,matches])=>(
-        <div key={date}>
-          <DateHeader dateStr={date}/>
-          {matches.map(m=>{
-            const r=results[m.id]||{};
-            const hasResult=r.homeGoals!=null&&r.awayGoals!=null;
+
+      {/* GRUPOS */}
+      {tab==="grupos"&&(
+        <>
+          <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+            {[1,2,3].map(j=>(
+              <button key={j} style={{...btn(jFilter===j?"primary":"outline"),padding:"8px 16px",fontSize:13}} onClick={()=>setJFilter(j)}>Jornada {j}</button>
+            ))}
+            <select style={{...inp,width:"auto"}} value={gFilter} onChange={e=>setGFilter(e.target.value)}>
+              <option value="Todos">Todos los grupos</option>
+              {groups.map(g=><option key={g} value={g}>Grupo {g}</option>)}
+            </select>
+          </div>
+          {Object.entries(byDate).map(([date,matches])=>(
+            <div key={date}>
+              <DateHeader dateStr={date}/>
+              {matches.map(m=>{
+                const r=results[m.id]||{};
+                const hasResult=r.homeGoals!=null&&r.awayGoals!=null;
+                return (
+                  <div key={m.id} style={{...card,padding:"12px 16px",marginBottom:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                      <span style={pill("#0f2d6e")}>G{m.group}</span>
+                      <span style={{fontSize:12,color:"#666"}}>{m.time}</span>
+                      <span style={{flex:1,textAlign:"center",fontWeight:700,fontSize:14}}>
+                        {FLAGS[m.home]||"🏳️"} {ABBR[m.home]} {hasResult?`${r.homeGoals} - ${r.awayGoals}`:"vs"} {ABBR[m.away]} {FLAGS[m.away]||"🏳️"}
+                      </span>
+                      {hasResult&&<span style={{...pill("#1b7f4a"),fontSize:11}}>Final</span>}
+                    </div>
+                    {m.venue&&<div style={{fontSize:11,color:"#555",marginBottom:8}}>📍 {m.venue}</div>}
+                    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                      {participants.map(p=>{
+                        const pred=(p.predictions||{})[m.id];
+                        const pts=hasResult&&pred?calcScore(pred,r):null;
+                        const hasPred=pred&&pred.home!=null&&pred.away!=null;
+                        return (
+                          <div key={p.id} style={{
+                            background:pts===5?"rgba(27,127,74,0.2)":pts===0&&hasResult?"rgba(127,27,27,0.2)":"rgba(255,255,255,0.05)",
+                            border:`1px solid ${pts===5?"#1b7f4a":pts===0&&hasResult?"#7f1b1b":"#333"}`,
+                            borderRadius:8,padding:"6px 10px",minWidth:80,textAlign:"center"
+                          }}>
+                            <div style={{fontSize:11,color:"#888",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:80}}>{p.name}</div>
+                            <div style={{fontWeight:700,fontSize:14}}>{hasPred?`${pred.home}-${pred.away}`:<span style={{color:"#555"}}>—</span>}</div>
+                            {pts!==null&&(
+                              <div style={{fontSize:10,color:pts===5?"#4ade80":pts===0?"#f87171":"#fbbf24",fontWeight:700,marginTop:2}}>
+                                {pts}pt{pts!==1?"s":""}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* ELIMINATORIAS */}
+      {tab==="eliminatorias"&&(
+        <>
+          <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+            {roundsWithMatches.map(r=>(
+              <button key={r} style={{...btn(roundFilter===r?"primary":"outline"),fontSize:11,padding:"6px 10px"}} onClick={()=>setRoundFilter(r)}>
+                {ROUND_LABELS[r]}
+              </button>
+            ))}
+          </div>
+          {knockoutMatches.filter(m=>m.round===roundFilter).map(m=>{
+            const hasResult=m.home_goals!=null&&m.away_goals!=null;
             return (
               <div key={m.id} style={{...card,padding:"12px 16px",marginBottom:8}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
-                  <span style={pill("#0f2d6e")}>G{m.group}</span>
-                  <span style={{fontSize:12,color:"#666"}}>{m.time}</span>
+                  <span style={pill("#0f2d6e")}>#{m.id}</span>
+                  <span style={{fontSize:12,color:"#666"}}>{m.time} CDMX</span>
                   <span style={{flex:1,textAlign:"center",fontWeight:700,fontSize:14}}>
-                    {FLAGS[m.home]||"🏳️"} {ABBR[m.home]} {hasResult?`${r.homeGoals} - ${r.awayGoals}`:"vs"} {ABBR[m.away]} {FLAGS[m.away]||"🏳️"}
+                    {FLAGS[m.home]||"🏳️"} {ABBR[m.home]||m.home} {hasResult?`${m.home_goals} - ${m.away_goals}`:"vs"} {ABBR[m.away]||m.away} {FLAGS[m.away]||"🏳️"}
                   </span>
                   {hasResult&&<span style={{...pill("#1b7f4a"),fontSize:11}}>Final</span>}
                 </div>
                 {m.venue&&<div style={{fontSize:11,color:"#555",marginBottom:8}}>📍 {m.venue}</div>}
+                {hasResult&&m.qualifier&&(
+                  <div style={{fontSize:11,color:"#4ade80",marginBottom:8}}>
+                    Clasifica: {FLAGS[m.qualifier]||""} {ABBR[m.qualifier]||m.qualifier}
+                  </div>
+                )}
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                   {participants.map(p=>{
-                    const pred=(p.predictions||{})[m.id];
-                    const pts=hasResult&&pred?calcScore(pred,r):null;
-                    const hasPred=pred&&pred.home!=null&&pred.away!=null;
+                    const pred=knockoutPredictions.find(pr=>pr.participant_id===p.id&&pr.match_id===m.id);
+                    const pts=hasResult&&pred?calcKnockoutScore(pred,m):null;
+                    const hasPred=pred&&pred.home_goals!=null;
                     return (
                       <div key={p.id} style={{
-                        background:pts===5?"rgba(27,127,74,0.2)":pts===0&&hasResult?"rgba(127,27,27,0.2)":"rgba(255,255,255,0.05)",
-                        border:`1px solid ${pts===5?"#1b7f4a":pts===0&&hasResult?"#7f1b1b":"#333"}`,
+                        background:pts>=5?"rgba(27,127,74,0.2)":pts===0&&hasResult?"rgba(127,27,27,0.2)":"rgba(255,255,255,0.05)",
+                        border:`1px solid ${pts>=5?"#1b7f4a":pts===0&&hasResult?"#7f1b1b":"#333"}`,
                         borderRadius:8,padding:"6px 10px",minWidth:80,textAlign:"center"
                       }}>
                         <div style={{fontSize:11,color:"#888",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:80}}>{p.name}</div>
-                        <div style={{fontWeight:700,fontSize:14}}>{hasPred?`${pred.home}-${pred.away}`:<span style={{color:"#555"}}>—</span>}</div>
+                        <div style={{fontWeight:700,fontSize:14}}>{hasPred?`${pred.home_goals}-${pred.away_goals}`:<span style={{color:"#555"}}>—</span>}</div>
+                        {hasPred&&pred.qualifier&&(
+                          <div style={{fontSize:10,color:"#888"}}>{FLAGS[pred.qualifier]||""} {ABBR[pred.qualifier]||pred.qualifier}</div>
+                        )}
                         {pts!==null&&(
-                          <div style={{fontSize:10,color:pts===5?"#4ade80":pts===0?"#f87171":"#fbbf24",fontWeight:700,marginTop:2}}>
+                          <div style={{fontSize:10,color:pts>=5?"#4ade80":pts===0?"#f87171":"#fbbf24",fontWeight:700,marginTop:2}}>
                             {pts}pt{pts!==1?"s":""}
                           </div>
                         )}
@@ -516,8 +740,8 @@ const PronosticosScreen = ({participants,results}) => {
               </div>
             );
           })}
-        </div>
-      ))}
+        </>
+      )}
     </div>
   );
 };
@@ -543,7 +767,6 @@ export default function QuinielaMundial() {
   const [loaded,setLoaded]=useState(false);
   const [knockoutMatches,setKnockoutMatches]=useState([]);
   const [knockoutPredictions,setKnockoutPredictions]=useState([]);
-  const [myKnockoutPreds,setMyKnockoutPreds]=useState([]);
 
   const [activeParticipantId,setActiveParticipantId]=useState(null);
   const [currentPreds,setCurrentPreds]=useState({});
@@ -737,7 +960,6 @@ export default function QuinielaMundial() {
     setScorers(prev=>prev.filter(s=>s.id!==id));
   },[]);
 
-  // ── KNOCKOUT handlers ──
   const handleKnockoutUpdateTeams=useCallback(async(matchId,home,away)=>{
     await db.updateKnockoutTeams(matchId,home,away);
     setKnockoutMatches(prev=>prev.map(m=>m.id===matchId?{...m,home,away}:m));
@@ -752,20 +974,20 @@ export default function QuinielaMundial() {
 
   const handleKnockoutSaveResult=useCallback(async(matchId,homeGoals,awayGoals,qualifier)=>{
     await db.upsertKnockoutResult(matchId,homeGoals,awayGoals,qualifier);
-    setKnockoutMatches(prev=>prev.map(m=>m.id===matchId?{...m,home_goals:homeGoals,away_goals:awayGoals,qualifier}:m));
+    setKnockoutMatches(prev=>prev.map(m=>m.id===matchId?{...m,home_goals:Number(homeGoals),away_goals:Number(awayGoals),qualifier}:m));
     flash("✅ Resultado guardado");
   },[]);
 
   const handleKnockoutSavePred=useCallback(async(matchId,pred)=>{
     if(!activeParticipantId) return;
-    await db.upsertKnockoutPrediction(activeParticipantId,matchId,pred.home_goals,pred.away_goals,pred.qualifier||null);
+    const homeGoals=pred.home_goals!=null&&pred.home_goals!==""?Number(pred.home_goals):null;
+    const awayGoals=pred.away_goals!=null&&pred.away_goals!==""?Number(pred.away_goals):null;
+    const qualifier=pred.qualifier||null;
+    if(homeGoals===null) return;
+    await db.upsertKnockoutPrediction(activeParticipantId,matchId,homeGoals,awayGoals,qualifier);
     setKnockoutPredictions(prev=>{
       const filtered=prev.filter(p=>!(p.participant_id===activeParticipantId&&p.match_id===matchId));
-      return [...filtered,{participant_id:activeParticipantId,match_id:matchId,...pred}];
-    });
-    setMyKnockoutPreds(prev=>{
-      const filtered=prev.filter(p=>p.match_id!==matchId);
-      return [...filtered,{participant_id:activeParticipantId,match_id:matchId,...pred}];
+      return [...filtered,{participant_id:activeParticipantId,match_id:matchId,home_goals:homeGoals,away_goals:awayGoals,qualifier}];
     });
   },[activeParticipantId]);
 
@@ -776,7 +998,6 @@ export default function QuinielaMundial() {
       const pred=(p.predictions||{})[m.id];
       if(r&&r.homeGoals!=null&&pred){const pts=calcScore(pred,r);if(pts!=null){total+=pts;played++;}}
     });
-    // Sumar puntos de eliminatorias
     knockoutMatches.filter(m=>m.home_goals!=null).forEach(m=>{
       const pred=knockoutPredictions.find(pr=>pr.participant_id===p.id&&pr.match_id===m.id);
       if(pred){const pts=calcKnockoutScore(pred,m);if(pts!=null)total+=pts;}
@@ -785,7 +1006,7 @@ export default function QuinielaMundial() {
   }).sort((a,b)=>b.total-a.total);
 
   const activeParticipant=participants.find(p=>p.id===activeParticipantId);
-  const myKnockoutPredsForScreen=knockoutPredictions.filter(p=>p.participant_id===activeParticipantId);
+  const myKnockoutPreds=knockoutPredictions.filter(p=>p.participant_id===activeParticipantId);
 
   if(!loaded) return (
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
@@ -804,15 +1025,15 @@ export default function QuinielaMundial() {
   const screens={
     home:<HomeScreen participants={participants} adminAuth={adminAuth} participantName={participantName} setParticipantName={setParticipantName} passInput={passInput} setPassInput={setPassInput} passError={passError} handleNewParticipant={handleNewParticipant} handleAdminLogin={handleAdminLogin} handleSelectParticipant={handleSelectParticipant} setScreen={setScreen} openJornadas={openJornadas}/>,
     admin:<AdminScreen participants={participants} results={results} openJornadas={openJornadas} savedMsg={savedMsg} handleResultChange={handleResultChange} toggleJornada={toggleJornada} newAdminPass={newAdminPass} setNewAdminPass={setNewAdminPass} handleChangePass={handleChangePass} ranking={ranking} handleDeleteParticipant={handleDeleteParticipant} handleCalcBadges={handleCalcBadges} quizOpenDates={quizOpenDates} handleQuizToggle={handleQuizToggle} handleRenameParticipant={handleRenameParticipant}/>,
-    participant:<ParticipantScreen activeParticipant={activeParticipant} openJornadas={openJornadas} results={results} currentPreds={currentPreds} handlePredChange={handlePredChange} savePredictions={savePredictions} savedMsg={savedMsg} ranking={ranking} activeParticipantId={activeParticipantId} earnedBadges={earnedBadges} coins={coins}/>,
+    participant:<ParticipantScreen activeParticipant={activeParticipant} openJornadas={openJornadas} results={results} currentPreds={currentPreds} handlePredChange={handlePredChange} savePredictions={savePredictions} savedMsg={savedMsg} ranking={ranking} activeParticipantId={activeParticipantId} earnedBadges={earnedBadges} coins={coins} knockoutMatches={knockoutMatches} knockoutPreds={myKnockoutPreds} onSaveKnockoutPred={handleKnockoutSavePred}/>,
     ranking:<RankingScreen ranking={ranking} results={results} knockoutMatches={knockoutMatches} knockoutPredictions={knockoutPredictions} participants={participants} openJornadas={openJornadas} earnedBadges={earnedBadges} coins={coins}/>,
-    pronosticos:<PronosticosScreen participants={participants} results={results}/>,
+    pronosticos:<PronosticosScreen participants={participants} results={results} knockoutMatches={knockoutMatches} knockoutPredictions={knockoutPredictions}/>,
     badges:<BadgesScreen participants={participants} earnedBadges={earnedBadges}/>,
     mundial:<MundialScreen results={results} scorers={scorers} onUpsertScorer={handleUpsertScorer} onDeleteScorer={handleDeleteScorer} isAdmin={adminAuth}/>,
     tendencias:<TendenciasScreen participants={participants} results={results} openJornadas={openJornadas} championPicks={championPicks} activeParticipantId={activeParticipantId} onChampionPick={handleChampionPick}/>,
     quiz:<QuizScreen participant={activeParticipant} openQuizDates={quizOpenDates} onSaveAnswers={handleSaveQuizAnswers}/>,
     perfil:<ProfileScreen participant={activeParticipant} results={results} earnedBadges={earnedBadges} coins={coins} quizAnswers={myQuizAnswers}/>,
-    knockout:<KnockoutScreen matches={knockoutMatches} predictions={myKnockoutPredsForScreen} participants={participants} onSavePred={handleKnockoutSavePred} activeParticipantId={activeParticipantId} isAdmin={adminAuth} onToggleMatch={handleKnockoutToggle} onUpdateTeams={handleKnockoutUpdateTeams} onSaveResult={handleKnockoutSaveResult}/>,
+    knockout:<KnockoutScreen matches={knockoutMatches} predictions={myKnockoutPreds} participants={participants} onSavePred={handleKnockoutSavePred} activeParticipantId={activeParticipantId} isAdmin={adminAuth} onToggleMatch={handleKnockoutToggle} onUpdateTeams={handleKnockoutUpdateTeams} onSaveResult={handleKnockoutSaveResult}/>,
   };
 
   return (
@@ -836,13 +1057,13 @@ export default function QuinielaMundial() {
           <button style={navBtn(screen==="ranking")} onClick={()=>setScreen("ranking")}>🏆 Ranking</button>
           <button style={navBtn(screen==="pronosticos")} onClick={()=>setScreen("pronosticos")}>📋 Pronósticos</button>
           {activeParticipant&&<button style={navBtn(screen==="participant")} onClick={()=>setScreen("participant")}>Mi Quiniela</button>}
-          <button style={navBtn(screen==="knockout")} onClick={()=>setScreen("knockout")}>🏆 Eliminatorias</button>
           <button style={navBtn(screen==="mundial")} onClick={()=>setScreen("mundial")}>🌎 Mundial</button>
           <button style={navBtn(screen==="quiz")} onClick={()=>setScreen("quiz")}>🧠 Quiz</button>
           <button style={navBtn(screen==="tendencias")} onClick={()=>setScreen("tendencias")}>🔮 Tendencias</button>
           <button style={navBtn(screen==="badges")} onClick={()=>setScreen("badges")}>🏅 Badges</button>
           {activeParticipant&&<button style={navBtn(screen==="perfil")} onClick={()=>setScreen("perfil")}>👤 Perfil</button>}
           {adminAuth&&<button style={navBtn(screen==="admin")} onClick={()=>setScreen("admin")}>⚙️ Admin</button>}
+          {adminAuth&&<button style={navBtn(screen==="knockout")} onClick={()=>setScreen("knockout")}>🏆 Elim. Admin</button>}
         </div>
       </div>
 
