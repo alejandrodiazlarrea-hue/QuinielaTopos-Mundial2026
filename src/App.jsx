@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { db } from "./lib/supabase.js";
 import { ALL_MATCHES, FLAGS, ABBR, calcScore, isExact, isResultCorrect, getResult } from "./data/matches.js";
 import { BADGE_DEFS, calcBadgesForJornada, calcCoinsFromBadges } from "./data/badges.js";
+import { calcKnockoutScore } from "./data/knockout.js";
 import { C, inp, card, sec, row, btn, pill, ScoreInput, DateHeader, Flash, CountdownBanner, PasswordModal } from "./components/ui.jsx";
 import { BadgesScreen } from "./components/BadgesScreen.jsx";
 import { ProfileScreen } from "./components/ProfileScreen.jsx";
 import { MundialScreen } from "./components/MundialScreen.jsx";
 import { TendenciasScreen } from "./components/TendenciasScreen.jsx";
 import { QuizScreen } from "./components/QuizScreen.jsx";
+import { KnockoutScreen } from "./components/KnockoutScreen.jsx";
 
 const HomeScreen = ({participants,adminAuth,participantName,setParticipantName,passInput,setPassInput,passError,handleNewParticipant,handleAdminLogin,handleSelectParticipant,setScreen,openJornadas}) => (
   <div style={{maxWidth:520,margin:"0 auto",padding:"24px 16px"}}>
@@ -323,7 +325,7 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
   );
 };
 
-const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,coins}) => {
+const RankingScreen = ({ranking,results,knockoutMatches,knockoutPredictions,participants,openJornadas,earnedBadges,coins}) => {
   const medals=["🥇","🥈","🥉"];
   const [tooltip, setTooltip] = useState(null);
   const maxPts=ranking[0]?.total||1;
@@ -412,6 +414,22 @@ const RankingScreen = ({ranking,results,participants,openJornadas,earnedBadges,c
                   </div>
                 );
               })}
+              {(() => {
+                const kPts = knockoutMatches.filter(m=>m.home_goals!=null).reduce((acc,m)=>{
+                  const pred = knockoutPredictions.find(pr=>pr.participant_id===p.id&&pr.match_id===m.id);
+                  if(pred){const pts=calcKnockoutScore(pred,m);if(pts!=null)acc+=pts;}
+                  return acc;
+                },0);
+                const kPlayed = knockoutMatches.filter(m=>m.home_goals!=null&&knockoutPredictions.find(pr=>pr.participant_id===p.id&&pr.match_id===m.id)).length;
+                if(kPlayed===0) return null;
+                return (
+                  <div style={{background:"rgba(255,255,255,0.05)",borderRadius:6,padding:"4px 10px",textAlign:"center",minWidth:70}}>
+                    <div style={{fontSize:10,color:"#666",fontWeight:700}}>Elim.</div>
+                    <div style={{fontSize:15,fontWeight:800,color:C.red}}>{kPts}</div>
+                    <div style={{fontSize:9,color:"#555"}}>{kPlayed} partidos</div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         );
@@ -523,6 +541,9 @@ export default function QuinielaMundial() {
   const [myQuizAnswers,setMyQuizAnswers]=useState([]);
   const [championPicks,setChampionPicks]=useState([]);
   const [loaded,setLoaded]=useState(false);
+  const [knockoutMatches,setKnockoutMatches]=useState([]);
+  const [knockoutPredictions,setKnockoutPredictions]=useState([]);
+  const [myKnockoutPreds,setMyKnockoutPreds]=useState([]);
 
   const [activeParticipantId,setActiveParticipantId]=useState(null);
   const [currentPreds,setCurrentPreds]=useState({});
@@ -530,8 +551,8 @@ export default function QuinielaMundial() {
   const [modal,setModal]=useState(null);
 
   useEffect(()=>{
-    Promise.all([db.getConfig(),db.getParticipants(),db.getResults(),db.getBadges(),db.getCoins(),db.getScorers()])
-      .then(([cfg,parts,res,badges,coinsData,scorersData])=>{
+    Promise.all([db.getConfig(),db.getParticipants(),db.getResults(),db.getBadges(),db.getCoins(),db.getScorers(),db.getKnockoutMatches(),db.getKnockoutPredictions()])
+      .then(([cfg,parts,res,badges,coinsData,scorersData,kMatches,kPreds])=>{
         if(cfg.open_jornadas) setOpenJornadas(cfg.open_jornadas);
         if(cfg.admin_pass) setAdminPass(cfg.admin_pass);
         if(cfg.quiz_open_dates) setQuizOpenDates(cfg.quiz_open_dates);
@@ -540,6 +561,8 @@ export default function QuinielaMundial() {
         setEarnedBadges(badges);
         setCoins(coinsData);
         setScorers(scorersData);
+        setKnockoutMatches(kMatches||[]);
+        setKnockoutPredictions(kPreds||[]);
         setLoaded(true);
         db.getChampionPicks().then(picks=>setChampionPicks(picks||[]));
       }).catch(()=>setLoaded(true));
@@ -547,14 +570,17 @@ export default function QuinielaMundial() {
 
   useEffect(()=>{
     const interval=setInterval(async()=>{
-      const [parts,res,badges,coinsData,scorersData,cfg]=await Promise.all([
-        db.getParticipants(),db.getResults(),db.getBadges(),db.getCoins(),db.getScorers(),db.getConfig()
+      const [parts,res,badges,coinsData,scorersData,cfg,kMatches,kPreds]=await Promise.all([
+        db.getParticipants(),db.getResults(),db.getBadges(),db.getCoins(),db.getScorers(),db.getConfig(),
+        db.getKnockoutMatches(),db.getKnockoutPredictions()
       ]);
       setParticipants(parts);
       setResults(res);
       setEarnedBadges(badges);
       setCoins(coinsData);
       setScorers(scorersData);
+      setKnockoutMatches(kMatches||[]);
+      setKnockoutPredictions(kPreds||[]);
       if(cfg.quiz_open_dates) setQuizOpenDates(cfg.quiz_open_dates);
     },15000);
     return ()=>clearInterval(interval);
@@ -643,7 +669,6 @@ export default function QuinielaMundial() {
     }
     const allBadges=await db.getBadges();
     setEarnedBadges(allBadges);
-
     for(const p of participants){
       const pBadgeKeys=allBadges.filter(b=>b.participant_id===p.id).map(b=>b.badge_key);
       const badgeCoins=calcCoinsFromBadges(pBadgeKeys);
@@ -652,7 +677,6 @@ export default function QuinielaMundial() {
       const total=badgeCoins+quizCoins;
       await db.upsertCoins(p.id,total);
     }
-
     const newCoins=await db.getCoins();
     setCoins(newCoins);
     flash(`✅ Badges de Jornada ${jornada} calculados`);
@@ -691,15 +715,12 @@ export default function QuinielaMundial() {
       const coinsToSave=i===answers.length-1?ans.coinsEarned+perfectBonus:ans.coinsEarned;
       await db.insertQuizAnswer(activeParticipantId,ans.questionId,date,ans.selectedIndex,ans.isCorrect,coinsToSave,quizLabel);
     }
-
-    // Recalcular total desde cero — badge coins + quiz coins
     const allBadges=await db.getBadges();
     const pBadgeKeys=allBadges.filter(b=>b.participant_id===activeParticipantId).map(b=>b.badge_key);
     const badgeCoins=calcCoinsFromBadges(pBadgeKeys);
     const quizRows=await db.getQuizAnswersByParticipant(activeParticipantId);
     const quizCoins=quizRows.reduce((sum,r)=>sum+(r.coins_earned||0),0);
     await db.upsertCoins(activeParticipantId,badgeCoins+quizCoins);
-
     const newCoins=await db.getCoins();
     setCoins(newCoins);
     if(activeParticipantId) db.getQuizAnswersByParticipant(activeParticipantId).then(ans=>setMyQuizAnswers(ans||[]));
@@ -716,6 +737,38 @@ export default function QuinielaMundial() {
     setScorers(prev=>prev.filter(s=>s.id!==id));
   },[]);
 
+  // ── KNOCKOUT handlers ──
+  const handleKnockoutUpdateTeams=useCallback(async(matchId,home,away)=>{
+    await db.updateKnockoutTeams(matchId,home,away);
+    setKnockoutMatches(prev=>prev.map(m=>m.id===matchId?{...m,home,away}:m));
+    flash("✅ Equipos actualizados");
+  },[]);
+
+  const handleKnockoutToggle=useCallback(async(matchId,isOpen)=>{
+    await db.toggleKnockoutMatch(matchId,isOpen);
+    setKnockoutMatches(prev=>prev.map(m=>m.id===matchId?{...m,is_open:isOpen}:m));
+    flash(isOpen?"🟢 Partido abierto":"🔒 Partido cerrado");
+  },[]);
+
+  const handleKnockoutSaveResult=useCallback(async(matchId,homeGoals,awayGoals,qualifier)=>{
+    await db.upsertKnockoutResult(matchId,homeGoals,awayGoals,qualifier);
+    setKnockoutMatches(prev=>prev.map(m=>m.id===matchId?{...m,home_goals:homeGoals,away_goals:awayGoals,qualifier}:m));
+    flash("✅ Resultado guardado");
+  },[]);
+
+  const handleKnockoutSavePred=useCallback(async(matchId,pred)=>{
+    if(!activeParticipantId) return;
+    await db.upsertKnockoutPrediction(activeParticipantId,matchId,pred.home_goals,pred.away_goals,pred.qualifier||null);
+    setKnockoutPredictions(prev=>{
+      const filtered=prev.filter(p=>!(p.participant_id===activeParticipantId&&p.match_id===matchId));
+      return [...filtered,{participant_id:activeParticipantId,match_id:matchId,...pred}];
+    });
+    setMyKnockoutPreds(prev=>{
+      const filtered=prev.filter(p=>p.match_id!==matchId);
+      return [...filtered,{participant_id:activeParticipantId,match_id:matchId,...pred}];
+    });
+  },[activeParticipantId]);
+
   const ranking=participants.map(p=>{
     let total=0,played=0;
     ALL_MATCHES.forEach(m=>{
@@ -723,10 +776,16 @@ export default function QuinielaMundial() {
       const pred=(p.predictions||{})[m.id];
       if(r&&r.homeGoals!=null&&pred){const pts=calcScore(pred,r);if(pts!=null){total+=pts;played++;}}
     });
+    // Sumar puntos de eliminatorias
+    knockoutMatches.filter(m=>m.home_goals!=null).forEach(m=>{
+      const pred=knockoutPredictions.find(pr=>pr.participant_id===p.id&&pr.match_id===m.id);
+      if(pred){const pts=calcKnockoutScore(pred,m);if(pts!=null)total+=pts;}
+    });
     return {...p,total,played};
   }).sort((a,b)=>b.total-a.total);
 
   const activeParticipant=participants.find(p=>p.id===activeParticipantId);
+  const myKnockoutPredsForScreen=knockoutPredictions.filter(p=>p.participant_id===activeParticipantId);
 
   if(!loaded) return (
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
@@ -746,13 +805,14 @@ export default function QuinielaMundial() {
     home:<HomeScreen participants={participants} adminAuth={adminAuth} participantName={participantName} setParticipantName={setParticipantName} passInput={passInput} setPassInput={setPassInput} passError={passError} handleNewParticipant={handleNewParticipant} handleAdminLogin={handleAdminLogin} handleSelectParticipant={handleSelectParticipant} setScreen={setScreen} openJornadas={openJornadas}/>,
     admin:<AdminScreen participants={participants} results={results} openJornadas={openJornadas} savedMsg={savedMsg} handleResultChange={handleResultChange} toggleJornada={toggleJornada} newAdminPass={newAdminPass} setNewAdminPass={setNewAdminPass} handleChangePass={handleChangePass} ranking={ranking} handleDeleteParticipant={handleDeleteParticipant} handleCalcBadges={handleCalcBadges} quizOpenDates={quizOpenDates} handleQuizToggle={handleQuizToggle} handleRenameParticipant={handleRenameParticipant}/>,
     participant:<ParticipantScreen activeParticipant={activeParticipant} openJornadas={openJornadas} results={results} currentPreds={currentPreds} handlePredChange={handlePredChange} savePredictions={savePredictions} savedMsg={savedMsg} ranking={ranking} activeParticipantId={activeParticipantId} earnedBadges={earnedBadges} coins={coins}/>,
-    ranking:<RankingScreen ranking={ranking} results={results} participants={participants} openJornadas={openJornadas} earnedBadges={earnedBadges} coins={coins}/>,
+    ranking:<RankingScreen ranking={ranking} results={results} knockoutMatches={knockoutMatches} knockoutPredictions={knockoutPredictions} participants={participants} openJornadas={openJornadas} earnedBadges={earnedBadges} coins={coins}/>,
     pronosticos:<PronosticosScreen participants={participants} results={results}/>,
     badges:<BadgesScreen participants={participants} earnedBadges={earnedBadges}/>,
     mundial:<MundialScreen results={results} scorers={scorers} onUpsertScorer={handleUpsertScorer} onDeleteScorer={handleDeleteScorer} isAdmin={adminAuth}/>,
     tendencias:<TendenciasScreen participants={participants} results={results} openJornadas={openJornadas} championPicks={championPicks} activeParticipantId={activeParticipantId} onChampionPick={handleChampionPick}/>,
     quiz:<QuizScreen participant={activeParticipant} openQuizDates={quizOpenDates} onSaveAnswers={handleSaveQuizAnswers}/>,
     perfil:<ProfileScreen participant={activeParticipant} results={results} earnedBadges={earnedBadges} coins={coins} quizAnswers={myQuizAnswers}/>,
+    knockout:<KnockoutScreen matches={knockoutMatches} predictions={myKnockoutPredsForScreen} participants={participants} onSavePred={handleKnockoutSavePred} activeParticipantId={activeParticipantId} isAdmin={adminAuth} onToggleMatch={handleKnockoutToggle} onUpdateTeams={handleKnockoutUpdateTeams} onSaveResult={handleKnockoutSaveResult}/>,
   };
 
   return (
@@ -776,6 +836,7 @@ export default function QuinielaMundial() {
           <button style={navBtn(screen==="ranking")} onClick={()=>setScreen("ranking")}>🏆 Ranking</button>
           <button style={navBtn(screen==="pronosticos")} onClick={()=>setScreen("pronosticos")}>📋 Pronósticos</button>
           {activeParticipant&&<button style={navBtn(screen==="participant")} onClick={()=>setScreen("participant")}>Mi Quiniela</button>}
+          <button style={navBtn(screen==="knockout")} onClick={()=>setScreen("knockout")}>🏆 Eliminatorias</button>
           <button style={navBtn(screen==="mundial")} onClick={()=>setScreen("mundial")}>🌎 Mundial</button>
           <button style={navBtn(screen==="quiz")} onClick={()=>setScreen("quiz")}>🧠 Quiz</button>
           <button style={navBtn(screen==="tendencias")} onClick={()=>setScreen("tendencias")}>🔮 Tendencias</button>
