@@ -176,4 +176,56 @@ export const db = {
       body: JSON.stringify({ name: newName }),
     });
   },
+
+  // ── KNOCKOUT ──────────────────────────────────────────────────────────────
+
+  // Obtener todos los partidos de eliminatorias
+  getKnockoutMatches: async () => {
+    return await supa("knockout_matches?select=*&order=id.asc") || [];
+  },
+
+  // Actualizar equipo(s) de un partido
+  updateKnockoutTeams: async (matchId, home, away) => {
+    await supa(`knockout_matches?id=eq.${matchId}`, {
+      method: "PATCH", prefer: "return=minimal",
+      body: JSON.stringify({ home, away }),
+    });
+  },
+
+  // Abrir o cerrar un partido
+  toggleKnockoutMatch: async (matchId, isOpen) => {
+    await supa(`knockout_matches?id=eq.${matchId}`, {
+      method: "PATCH", prefer: "return=minimal",
+      body: JSON.stringify({ is_open: isOpen }),
+    });
+  },
+
+  // Capturar resultado de un partido knockout
+  upsertKnockoutResult: async (matchId, homeGoals, awayGoals, qualifier) => {
+    await supa(`knockout_matches?id=eq.${matchId}`, {
+      method: "PATCH", prefer: "return=minimal",
+      body: JSON.stringify({ home_goals: homeGoals, away_goals: awayGoals, qualifier }),
+    });
+  },
+
+  // Pronósticos de eliminatorias
+  getKnockoutPredictions: async () => {
+    return await supa("knockout_predictions?select=*") || [];
+  },
+  getKnockoutPredictionsByParticipant: async (participantId) => {
+    return await supa(`knockout_predictions?participant_id=eq.${participantId}&select=*`) || [];
+  },
+  upsertKnockoutPrediction: async (participantId, matchId, homeGoals, awayGoals, qualifier) => {
+    await supa("knockout_predictions", {
+      method: "POST",
+      prefer: "resolution=merge-duplicates,return=minimal",
+      body: JSON.stringify({
+        participant_id: participantId,
+        match_id: matchId,
+        home_goals: homeGoals,
+        away_goals: awayGoals,
+        qualifier,
+      }),
+    });
+  },
 };
