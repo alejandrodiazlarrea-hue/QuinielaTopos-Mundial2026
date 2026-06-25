@@ -212,12 +212,107 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
   );
 };
 
+// Componente separado para cada partido de eliminatoria en Mi Quiniela
+const KnockoutMatchRow = ({m, myPred, onSave}) => {
+  const [localH, setLocalH] = useState(myPred?.home_goals ?? "");
+  const [localA, setLocalA] = useState(myPred?.away_goals ?? "");
+  const [localQ, setLocalQ] = useState(myPred?.qualifier ?? null);
+  const [saved, setSaved] = useState(false);
+
+  const hasResult = m.home_goals != null && m.away_goals != null;
+  const pts = hasResult && myPred ? calcKnockoutScore(myPred, m) : null;
+  const drawn = localH !== "" && localA !== "" && Number(localH) === Number(localA);
+
+  const handleSave = async () => {
+    if (localH === "" || localA === "") return;
+    await onSave(m.id, {
+      home_goals: Number(localH),
+      away_goals: Number(localA),
+      qualifier: drawn ? localQ : null,
+    });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div style={{...card, marginBottom:10, padding:"14px 16px"}}>
+      <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:10, flexWrap:"wrap"}}>
+        <span style={pill("#0f2d6e")}>#{m.id}</span>
+        <span style={{fontSize:11, color:"#666"}}>{m.time} CDMX</span>
+        <span style={{fontSize:10, color:"#555"}}>📍 {m.venue}</span>
+        {hasResult && <span style={{...pill("#1b7f4a"), fontSize:11}}>Final</span>}
+        {!hasResult && <span style={{...pill("#1b7f4a"), fontSize:11}}>🟢 Abierto</span>}
+      </div>
+
+      <div style={{display:"flex", alignItems:"center", justifyContent:"center", gap:12, marginBottom:12}}>
+        <div style={{fontWeight:700, fontSize:15, textAlign:"right", minWidth:100}}>
+          {FLAGS[m.home]||"🏳️"} {ABBR[m.home]||m.home}
+        </div>
+        {hasResult ? (
+          <div style={{textAlign:"center"}}>
+            <div style={{fontWeight:900, fontSize:18, color:C.red}}>{m.home_goals} - {m.away_goals}</div>
+            {m.qualifier && <div style={{fontSize:11, color:"#4ade80", marginTop:4}}>Clasifica: {FLAGS[m.qualifier]||""} {ABBR[m.qualifier]||m.qualifier}</div>}
+          </div>
+        ) : (
+          <div style={{fontWeight:700, fontSize:14, color:"#555"}}>vs</div>
+        )}
+        <div style={{fontWeight:700, fontSize:15, textAlign:"left", minWidth:100}}>
+          {FLAGS[m.away]||"🏳️"} {ABBR[m.away]||m.away}
+        </div>
+      </div>
+
+      <div style={{borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:10}}>
+        <div style={{fontSize:12, color:"#888", marginBottom:8}}>Tu pronóstico (90 min)</div>
+        <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
+          <span style={{fontSize:13, color:"#ccc", fontWeight:600}}>{ABBR[m.home]||m.home}</span>
+          <ScoreInput value={localH} onChange={v => setLocalH(v)} disabled={hasResult}/>
+          <span style={{color:"#555"}}>-</span>
+          <ScoreInput value={localA} onChange={v => setLocalA(v)} disabled={hasResult}/>
+          <span style={{fontSize:13, color:"#ccc", fontWeight:600}}>{ABBR[m.away]||m.away}</span>
+        </div>
+
+        {drawn && !hasResult && (
+          <div style={{marginTop:10}}>
+            <div style={{fontSize:12, color:"#888", marginBottom:6}}>¿Quién clasifica?</div>
+            <div style={{display:"flex", gap:8}}>
+              {[m.home, m.away].map(team => (
+                <button key={team}
+                  style={{
+                    background: localQ === team ? C.red : "rgba(255,255,255,0.05)",
+                    border: `1px solid ${localQ === team ? C.red : "#333"}`,
+                    borderRadius:8, color:"#fff", padding:"8px 14px", cursor:"pointer", fontSize:13, fontWeight:600
+                  }}
+                  onClick={() => setLocalQ(team)}>
+                  {FLAGS[team]||"🏳️"} {ABBR[team]||team}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!hasResult && (
+          <button
+            style={{...btn(saved ? "success" : "primary"), marginTop:12, width:"100%"}}
+            onClick={handleSave}>
+            {saved ? "✅ Guardado" : "Guardar pronóstico"}
+          </button>
+        )}
+
+        {pts !== null && (
+          <div style={{marginTop:8}}>
+            <span style={{...pill(pts>=5?"#1b7f4a":pts===0?"#7f1b1b":"#7f5a00"), fontSize:12}}>{pts}pts</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,handlePredChange,savePredictions,savedMsg,ranking,activeParticipantId,earnedBadges,coins,knockoutMatches,knockoutPreds,onSaveKnockoutPred}) => {
   if (!activeParticipant) return null;
   const [savedJ,setSavedJ]=useState(null);
   const [activeTab,setActiveTab]=useState("grupos");
   const [knockoutRound,setKnockoutRound]=useState("16avos");
-  const [predInputs,setPredInputs]=useState({});
 
   const openJs=Object.entries(openJornadas).filter(([,v])=>v).map(([k])=>Number(k));
   const available=ALL_MATCHES.filter(m=>openJs.includes(m.jornada));
@@ -226,33 +321,6 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
   const myCoins=coins.find(c=>c.participant_id===activeParticipantId)?.total||0;
 
   const handleSave=async(j)=>{ await savePredictions(); setSavedJ(j); setTimeout(()=>setSavedJ(null),3000); };
-
-  const getMyKPred=(matchId)=>knockoutPreds.find(p=>p.match_id===matchId);
-
-  const getPredLocal=(matchId,field,myPred)=>{
-    const key=`${matchId}_${field}`;
-    if(predInputs[key]!==undefined) return predInputs[key];
-    if(myPred?.[field]!=null) return myPred[field];
-    return "";
-  };
-
-  const setPredLocal=(matchId,field,value)=>{
-    setPredInputs(prev=>({...prev,[`${matchId}_${field}`]:value}));
-  };
-
-  const localIsDrawn=(matchId,myPred)=>{
-    const h=predInputs[`${matchId}_home_goals`]!==undefined?predInputs[`${matchId}_home_goals`]:myPred?.home_goals;
-    const a=predInputs[`${matchId}_away_goals`]!==undefined?predInputs[`${matchId}_away_goals`]:myPred?.away_goals;
-    return h!==""&&h!=null&&a!==""&&a!=null&&Number(h)===Number(a);
-  };
-
-  const saveKPredLocal=(matchId,myPred,overrides={})=>{
-    const homeGoals=overrides.home_goals!==undefined?overrides.home_goals:(predInputs[`${matchId}_home_goals`]!==undefined?predInputs[`${matchId}_home_goals`]:myPred?.home_goals);
-    const awayGoals=overrides.away_goals!==undefined?overrides.away_goals:(predInputs[`${matchId}_away_goals`]!==undefined?predInputs[`${matchId}_away_goals`]:myPred?.away_goals);
-    const qualifier=overrides.qualifier!==undefined?overrides.qualifier:(predInputs[`${matchId}_qualifier`]!==undefined?predInputs[`${matchId}_qualifier`]:myPred?.qualifier??null);
-    if(homeGoals==null||homeGoals==="") return;
-    onSaveKnockoutPred(matchId,{home_goals:homeGoals,away_goals:awayGoals,qualifier});
-  };
 
   const openKnockoutMatches=knockoutMatches.filter(m=>m.is_open&&m.home!=="A definir"&&m.away!=="A definir");
   const roundsWithOpen=KNOCKOUT_ROUNDS.filter(r=>knockoutMatches.some(m=>m.round===r&&m.is_open));
@@ -298,7 +366,7 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
         </div>
       )}
 
-      {/* Tabs grupos / eliminatorias */}
+      {/* Tabs */}
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
         <button style={{...btn(activeTab==="grupos"?"primary":"outline"),fontSize:13}} onClick={()=>setActiveTab("grupos")}>
           ⚽ Fase de Grupos
@@ -380,95 +448,17 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
               ))}
             </div>
           )}
-          {knockoutMatches.filter(m=>m.round===knockoutRound&&m.is_open&&m.home!=="A definir"&&m.away!=="A definir").map(m=>{
-            const myPred=getMyKPred(m.id);
-            const hasResult=m.home_goals!=null&&m.away_goals!=null;
-            const pts=hasResult&&myPred?calcKnockoutScore(myPred,m):null;
-            const drawn=localIsDrawn(m.id,myPred);
-            const localQ=predInputs[`${m.id}_qualifier`]!==undefined?predInputs[`${m.id}_qualifier`]:myPred?.qualifier;
-
-            return (
-              <div key={m.id} style={{...card,marginBottom:10,padding:"14px 16px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-                  <span style={pill("#0f2d6e")}>#{m.id}</span>
-                  <span style={{fontSize:11,color:"#666"}}>{m.time} CDMX</span>
-                  <span style={{fontSize:10,color:"#555"}}>📍 {m.venue}</span>
-                  {hasResult&&<span style={{...pill("#1b7f4a"),fontSize:11}}>Final</span>}
-                  {!hasResult&&<span style={{...pill("#1b7f4a"),fontSize:11}}>🟢 Abierto</span>}
-                </div>
-
-                <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:12}}>
-                  <div style={{fontWeight:700,fontSize:15,textAlign:"right",minWidth:100}}>
-                    {FLAGS[m.home]||"🏳️"} {ABBR[m.home]||m.home}
-                  </div>
-                  {hasResult?(
-                    <div style={{textAlign:"center"}}>
-                      <div style={{fontWeight:900,fontSize:18,color:C.red}}>{m.home_goals} - {m.away_goals}</div>
-                      {m.qualifier&&<div style={{fontSize:11,color:"#4ade80",marginTop:4}}>Clasifica: {FLAGS[m.qualifier]||""} {ABBR[m.qualifier]||m.qualifier}</div>}
-                    </div>
-                  ):(
-                    <div style={{fontWeight:700,fontSize:14,color:"#555"}}>vs</div>
-                  )}
-                  <div style={{fontWeight:700,fontSize:15,textAlign:"left",minWidth:100}}>
-                    {FLAGS[m.away]||"🏳️"} {ABBR[m.away]||m.away}
-                  </div>
-                </div>
-
-                <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",paddingTop:10}}>
-                  <div style={{fontSize:12,color:"#888",marginBottom:8}}>Tu pronóstico (90 min)</div>
-                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                    <span style={{fontSize:13,color:"#ccc",fontWeight:600}}>{ABBR[m.home]||m.home}</span>
-                    <ScoreInput
-                      value={getPredLocal(m.id,"home_goals",myPred)}
-                      onChange={v=>{
-                        setPredLocal(m.id,"home_goals",v);
-                        saveKPredLocal(m.id,myPred,{home_goals:v});
-                      }}
-                      disabled={hasResult}
-                    />
-                    <span style={{color:"#555"}}>-</span>
-                    <ScoreInput
-                      value={getPredLocal(m.id,"away_goals",myPred)}
-                      onChange={v=>{
-                        setPredLocal(m.id,"away_goals",v);
-                        saveKPredLocal(m.id,myPred,{away_goals:v});
-                      }}
-                      disabled={hasResult}
-                    />
-                    <span style={{fontSize:13,color:"#ccc",fontWeight:600}}>{ABBR[m.away]||m.away}</span>
-                  </div>
-
-                  {drawn&&!hasResult&&(
-                    <div style={{marginTop:10}}>
-                      <div style={{fontSize:12,color:"#888",marginBottom:6}}>¿Quién clasifica?</div>
-                      <div style={{display:"flex",gap:8}}>
-                        {[m.home,m.away].map(team=>(
-                          <button key={team}
-                            style={{
-                              background:localQ===team?C.red:"rgba(255,255,255,0.05)",
-                              border:`1px solid ${localQ===team?C.red:"#333"}`,
-                              borderRadius:8,color:"#fff",padding:"8px 14px",cursor:"pointer",fontSize:13,fontWeight:600
-                            }}
-                            onClick={()=>{
-                              setPredLocal(m.id,"qualifier",team);
-                              saveKPredLocal(m.id,myPred,{qualifier:team});
-                            }}>
-                            {FLAGS[team]||"🏳️"} {ABBR[team]||team}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {pts!==null&&(
-                    <div style={{marginTop:8}}>
-                      <span style={{...pill(pts>=5?"#1b7f4a":pts===0?"#7f1b1b":"#7f5a00"),fontSize:12}}>{pts}pts</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {knockoutMatches
+            .filter(m=>m.round===knockoutRound&&m.is_open&&m.home!=="A definir"&&m.away!=="A definir")
+            .map(m=>(
+              <KnockoutMatchRow
+                key={m.id}
+                m={m}
+                myPred={knockoutPreds.find(p=>p.match_id===m.id)}
+                onSave={onSaveKnockoutPred}
+              />
+            ))
+          }
         </div>
       )}
     </div>
@@ -619,13 +609,11 @@ const PronosticosScreen = ({participants,results,knockoutMatches,knockoutPredict
       <div style={{fontSize:22,fontWeight:900,marginBottom:4}}>📋 Pronósticos <span style={{color:C.red}}>de Todos</span></div>
       <div style={{fontSize:12,color:"#888",marginBottom:16}}>Pronósticos de todos los participantes</div>
 
-      {/* Tab grupos / eliminatorias */}
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
         <button style={{...btn(tab==="grupos"?"primary":"outline"),fontSize:13}} onClick={()=>setTab("grupos")}>⚽ Grupos</button>
         <button style={{...btn(tab==="eliminatorias"?"primary":"outline"),fontSize:13}} onClick={()=>setTab("eliminatorias")}>🏆 Eliminatorias</button>
       </div>
 
-      {/* GRUPOS */}
       {tab==="grupos"&&(
         <>
           <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
@@ -684,7 +672,6 @@ const PronosticosScreen = ({participants,results,knockoutMatches,knockoutPredict
         </>
       )}
 
-      {/* ELIMINATORIAS */}
       {tab==="eliminatorias"&&(
         <>
           <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
@@ -980,8 +967,8 @@ export default function QuinielaMundial() {
 
   const handleKnockoutSavePred=useCallback(async(matchId,pred)=>{
     if(!activeParticipantId) return;
-    const homeGoals=pred.home_goals!=null&&pred.home_goals!==""?Number(pred.home_goals):null;
-    const awayGoals=pred.away_goals!=null&&pred.away_goals!==""?Number(pred.away_goals):null;
+    const homeGoals=pred.home_goals!=null?Number(pred.home_goals):null;
+    const awayGoals=pred.away_goals!=null?Number(pred.away_goals):null;
     const qualifier=pred.qualifier||null;
     if(homeGoals===null) return;
     await db.upsertKnockoutPrediction(activeParticipantId,matchId,homeGoals,awayGoals,qualifier);
