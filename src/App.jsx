@@ -685,52 +685,61 @@ const PronosticosScreen = ({participants,results,knockoutMatches,knockoutPredict
               </button>
             ))}
           </div>
-          {knockoutMatches.filter(m=>m.round===roundFilter).map(m=>{
-            const hasResult=m.home_goals!=null&&m.away_goals!=null;
-            return (
-              <div key={m.id} style={{...card,padding:"12px 16px",marginBottom:8}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
-                  <span style={pill("#0f2d6e")}>#{m.id}</span>
-                  <span style={{fontSize:12,color:"#666"}}>{m.time} CDMX</span>
-                  <span style={{flex:1,textAlign:"center",fontWeight:700,fontSize:14}}>
-                    {FLAGS[m.home]||"🏳️"} {ABBR[m.home]||m.home} {hasResult?`${m.home_goals} - ${m.away_goals}`:"vs"} {ABBR[m.away]||m.away} {FLAGS[m.away]||"🏳️"}
-                  </span>
-                  {hasResult&&<span style={{...pill("#1b7f4a"),fontSize:11}}>Final</span>}
-                </div>
-                {m.venue&&<div style={{fontSize:11,color:"#555",marginBottom:8}}>📍 {m.venue}</div>}
-                {hasResult&&m.qualifier&&(
-                  <div style={{fontSize:11,color:"#4ade80",marginBottom:8}}>
-                    Clasifica: {FLAGS[m.qualifier]||""} {ABBR[m.qualifier]||m.qualifier}
-                  </div>
-                )}
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {participants.map(p=>{
-                    const pred=knockoutPredictions.find(pr=>pr.participant_id===p.id&&pr.match_id===m.id);
-                    const pts=hasResult&&pred?calcKnockoutScore(pred,m):null;
-                    const hasPred=pred&&pred.home_goals!=null;
-                    return (
-                      <div key={p.id} style={{
-                        background:pts>=5?"rgba(27,127,74,0.2)":pts===0&&hasResult?"rgba(127,27,27,0.2)":"rgba(255,255,255,0.05)",
-                        border:`1px solid ${pts>=5?"#1b7f4a":pts===0&&hasResult?"#7f1b1b":"#333"}`,
-                        borderRadius:8,padding:"6px 10px",minWidth:80,textAlign:"center"
-                      }}>
-                        <div style={{fontSize:11,color:"#888",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:80}}>{p.name}</div>
-                        <div style={{fontWeight:700,fontSize:14}}>{hasPred?`${pred.home_goals}-${pred.away_goals}`:<span style={{color:"#555"}}>—</span>}</div>
-                        {hasPred&&pred.qualifier&&(
-                          <div style={{fontSize:10,color:"#888"}}>{FLAGS[pred.qualifier]||""} {ABBR[pred.qualifier]||pred.qualifier}</div>
-                        )}
-                        {pts!==null&&(
-                          <div style={{fontSize:10,color:pts>=5?"#4ade80":pts===0?"#f87171":"#fbbf24",fontWeight:700,marginTop:2}}>
-                            {pts}pt{pts!==1?"s":""}
-                          </div>
-                        )}
+          {(()=>{
+            const filtered=knockoutMatches.filter(m=>m.round===roundFilter);
+            const byDateK=filtered.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
+            return Object.entries(byDateK).map(([date,dayMatches])=>(
+              <div key={date}>
+                <DateHeader dateStr={date}/>
+                {dayMatches.map(m=>{
+                  const hasResult=m.home_goals!=null&&m.away_goals!=null;
+                  return (
+                    <div key={m.id} style={{...card,padding:"12px 16px",marginBottom:8}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                        <span style={pill("#0f2d6e")}>#{m.id}</span>
+                        <span style={{fontSize:12,color:"#666"}}>{m.time} CDMX</span>
+                        <span style={{flex:1,textAlign:"center",fontWeight:700,fontSize:14}}>
+                          {FLAGS[m.home]||"🏳️"} {ABBR[m.home]||m.home} {hasResult?`${m.home_goals} - ${m.away_goals}`:"vs"} {ABBR[m.away]||m.away} {FLAGS[m.away]||"🏳️"}
+                        </span>
+                        {hasResult&&<span style={{...pill("#1b7f4a"),fontSize:11}}>Final</span>}
                       </div>
-                    );
-                  })}
-                </div>
+                      {m.venue&&<div style={{fontSize:11,color:"#555",marginBottom:8}}>📍 {m.venue}</div>}
+                      {hasResult&&m.qualifier&&(
+                        <div style={{fontSize:11,color:"#4ade80",marginBottom:8}}>
+                          Clasifica: {FLAGS[m.qualifier]||""} {ABBR[m.qualifier]||m.qualifier}
+                        </div>
+                      )}
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {participants.map(p=>{
+                          const pred=knockoutPredictions.find(pr=>pr.participant_id===p.id&&pr.match_id===m.id);
+                          const pts=hasResult&&pred?calcKnockoutScore(pred,m):null;
+                          const hasPred=pred&&pred.home_goals!=null;
+                          return (
+                            <div key={p.id} style={{
+                              background:pts>=5?"rgba(27,127,74,0.2)":pts===0&&hasResult?"rgba(127,27,27,0.2)":"rgba(255,255,255,0.05)",
+                              border:`1px solid ${pts>=5?"#1b7f4a":pts===0&&hasResult?"#7f1b1b":"#333"}`,
+                              borderRadius:8,padding:"6px 10px",minWidth:80,textAlign:"center"
+                            }}>
+                              <div style={{fontSize:11,color:"#888",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:80}}>{p.name}</div>
+                              <div style={{fontWeight:700,fontSize:14}}>{hasPred?`${pred.home_goals}-${pred.away_goals}`:<span style={{color:"#555"}}>—</span>}</div>
+                              {hasPred&&pred.qualifier&&(
+                                <div style={{fontSize:10,color:"#888"}}>{FLAGS[pred.qualifier]||""} {ABBR[pred.qualifier]||pred.qualifier}</div>
+                              )}
+                              {pts!==null&&(
+                                <div style={{fontSize:10,color:pts>=5?"#4ade80":pts===0?"#f87171":"#fbbf24",fontWeight:700,marginTop:2}}>
+                                  {pts}pt{pts!==1?"s":""}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            ));
+          })()}
         </>
       )}
     </div>
