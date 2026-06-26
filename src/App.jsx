@@ -452,17 +452,23 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
               ))}
             </div>
           )}
-          {knockoutMatches
-            .filter(m=>m.round===knockoutRound&&m.is_open&&m.home!=="A definir"&&m.away!=="A definir")
-            .map(m=>(
-              <KnockoutMatchRow
-                key={m.id}
-                m={m}
-                myPred={knockoutPreds.find(p=>p.match_id===m.id)}
-                onSave={onSaveKnockoutPred}
-              />
-            ))
-          }
+          {(()=>{
+            const filtered=knockoutMatches.filter(m=>m.round===knockoutRound&&m.is_open&&m.home!=="A definir"&&m.away!=="A definir");
+            const byDateK=filtered.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
+            return Object.entries(byDateK).map(([date,dayMatches])=>(
+              <div key={date}>
+                <DateHeader dateStr={date}/>
+                {dayMatches.map(m=>(
+                  <KnockoutMatchRow
+                    key={m.id}
+                    m={m}
+                    myPred={knockoutPreds.find(p=>p.match_id===m.id)}
+                    onSave={onSaveKnockoutPred}
+                  />
+                ))}
+              </div>
+            ));
+          })()}
         </div>
       )}
     </div>
