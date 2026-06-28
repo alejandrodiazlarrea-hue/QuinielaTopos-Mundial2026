@@ -123,7 +123,6 @@ export const QUIZ_QUESTIONS = [
   { category:"Historia", difficulty:"dificil", question:"¿Cuál fue la asistencia récord en un partido de Mundial?", options:["173,850 en Uruguay 1950","114,600 en México 1986","98,000 en Brasil 2014","120,000 en Argentina 1978"], correct_index:0 },
   { category:"Jugadores", difficulty:"dificil", question:"¿Qué jugador marcó el gol más rápido en la historia de los Mundiales?", options:["Hakan Şükür","Clint Dempsey","Bryan Ruiz","Ebbe Sand"], correct_index:0 },
   { category:"Historia", difficulty:"dificil", question:"¿En qué año se jugó el primer Mundial con 32 equipos?", options:["1990","1994","1998","2002"], correct_index:2 },
-  { category:"Selecciones", difficulty:"dificil", question:"¿Qué país clasificó al Mundial 2026 por primera vez en su historia desde CONMEBOL?", options:["Bolivia","Venezuela","Ecuador","Paraguay"], correct_index:1 },
   { category:"Momentos", difficulty:"dificil", question:"¿Cuántos penales se lanzaron en la final del Mundial 2006?", options:["3","4","5","6"], correct_index:2 },
   { category:"Cultura", difficulty:"dificil", question:"¿Cuántos balones oficiales distintos ha habido en la historia del Mundial?", options:["18","20","22","24"], correct_index:1 },
   // ── QUIZ 18 ──────────────────────────────────────────────────────────────────
