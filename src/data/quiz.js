@@ -279,3 +279,4 @@ export const QUIZ_QUESTIONS = [
   { category:"Selecciones", difficulty:"media", question:"¿Qué selección ganó el Mundial Femenino 2023?", options:["Estados Unidos","Alemania","España","Brasil"], correct_index:2 },
   { category:"Cultura", difficulty:"media", question:"¿Qué jugador inventó la 'bicicleta' o chilena?", options:["Pelé","Maradona","Ramón Unzaga","Ronaldinho"], correct_index:2 },
   { category:"Momentos", difficulty:"dificil", question:"¿Qué jugador marcó el gol que le dio a España el Mundial 2010 en la prórroga?", options:["Villa","Torres","Xavi","Iniesta"], correct_index:3 },
+];
