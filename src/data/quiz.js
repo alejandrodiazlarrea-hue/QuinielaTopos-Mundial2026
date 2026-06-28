@@ -126,4 +126,156 @@ export const QUIZ_QUESTIONS = [
   { category:"Selecciones", difficulty:"dificil", question:"¿Qué país clasificó al Mundial 2026 por primera vez en su historia desde CONMEBOL?", options:["Bolivia","Venezuela","Ecuador","Paraguay"], correct_index:1 },
   { category:"Momentos", difficulty:"dificil", question:"¿Cuántos penales se lanzaron en la final del Mundial 2006?", options:["3","4","5","6"], correct_index:2 },
   { category:"Cultura", difficulty:"dificil", question:"¿Cuántos balones oficiales distintos ha habido en la historia del Mundial?", options:["18","20","22","24"], correct_index:1 },
-];
+  // ── QUIZ 18 ──────────────────────────────────────────────────────────────────
+  { category:"Historia", difficulty:"media", question:"¿En qué año no se celebró el Mundial por la Segunda Guerra Mundial por primera vez?", options:["1938","1942","1946","1950"], correct_index:1 },
+  { category:"Jugadores", difficulty:"facil", question:"¿Qué jugador es conocido como 'La Pulga'?", options:["Neymar","Messi","Mbappé","Suárez"], correct_index:1 },
+  { category:"Selecciones", difficulty:"facil", question:"¿De qué color es la camiseta titular de Argentina?", options:["Roja y azul","Blanca y celeste","Verde y amarilla","Azul y blanca"], correct_index:1 },
+  { category:"Cultura", difficulty:"media", question:"¿Cuántos árbitros asistentes hay en un partido oficial de fútbol?", options:["1","2","3","4"], correct_index:1 },
+  { category:"Momentos", difficulty:"dificil", question:"¿Quién fue el primer jugador en marcar en una final de Mundial y quedar en el bando perdedor?", options:["Helmut Rahn","Johan Neeskens","Marco van Basten","Stéphane Guivarc'h"], correct_index:1 },
+
+  // ── QUIZ 19 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"facil", question:"¿Qué jugador es conocido como 'O Rei' (El Rey)?", options:["Ronaldo","Ronaldinho","Pelé","Zico"], correct_index:2 },
+  { category:"Historia", difficulty:"media", question:"¿Cuántos Mundiales ganó Alemania como Alemania Occidental antes de la reunificación?", options:["1","2","3","4"], correct_index:2 },
+  { category:"Selecciones", difficulty:"facil", question:"¿Cuál es el apodo de la selección de España?", options:["La Albiceleste","La Canarinha","La Furia Roja","Les Bleus"], correct_index:2 },
+  { category:"Cultura", difficulty:"media", question:"¿Qué significa un 'gol olímpico' en fútbol?", options:["Un gol marcado en los Juegos Olímpicos","Un gol directo desde un córner","Un gol de media distancia","Un gol en propia puerta"], correct_index:1 },
+  { category:"Momentos", difficulty:"media", question:"¿Qué selección ganó la Eurocopa 2020 (jugada en 2021)?", options:["Francia","España","Italia","Portugal"], correct_index:2 },
+
+  // ── QUIZ 20 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"media", question:"¿Quién es el máximo goleador histórico de la selección de Brasil?", options:["Pelé","Ronaldo","Neymar","Zico"], correct_index:2 },
+  { category:"Historia", difficulty:"facil", question:"¿Qué país fue sede del Mundial 1994?", options:["México","Alemania","Estados Unidos","Francia"], correct_index:2 },
+  { category:"Selecciones", difficulty:"media", question:"¿Qué selección ganó la Copa América más veces en la historia?", options:["Brasil","Argentina","Uruguay","Chile"], correct_index:1 },
+  { category:"Cultura", difficulty:"facil", question:"¿Cuántos puntos da una victoria en la fase de grupos de un Mundial?", options:["1","2","3","4"], correct_index:2 },
+  { category:"Momentos", difficulty:"dificil", question:"¿Qué árbitro dirigió la final del Mundial 2022?", options:["Raphaël Claus","Szymon Marciniak","Daniele Orsato","Björn Kuipers"], correct_index:1 },
+
+  // ── QUIZ 21 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"facil", question:"¿En qué club juega actualmente Erling Haaland?", options:["Dortmund","Bayern Munich","Manchester City","Real Madrid"], correct_index:2 },
+  { category:"Historia", difficulty:"media", question:"¿Qué selección ganó la Eurocopa 2016?", options:["Francia","Alemania","Portugal","España"], correct_index:2 },
+  { category:"Selecciones", difficulty:"dificil", question:"¿Cuántas veces ha ganado Argentina la Copa América?", options:["13","14","15","16"], correct_index:3 },
+  { category:"Cultura", difficulty:"facil", question:"¿Cuánto mide un arco de fútbol de ancho?", options:["6.5 metros","7.32 metros","8 metros","7 metros"], correct_index:1 },
+  { category:"Momentos", difficulty:"media", question:"¿Qué selección ganó la primera Copa América en 1916?", options:["Brasil","Argentina","Uruguay","Chile"], correct_index:2 },
+
+  // ── QUIZ 22 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"media", question:"¿Quién es el máximo goleador histórico de la Champions League?", options:["Messi","Ronaldo","Raúl","Van Nistelrooy"], correct_index:1 },
+  { category:"Historia", difficulty:"facil", question:"¿Qué selección ganó el Mundial 1966?", options:["Alemania","Brasil","Inglaterra","Argentina"], correct_index:2 },
+  { category:"Selecciones", difficulty:"media", question:"¿Qué selección tiene más títulos de Eurocopa?", options:["Alemania","España","Francia","Italia"], correct_index:1 },
+  { category:"Cultura", difficulty:"media", question:"¿Desde qué distancia se lanza un penal en fútbol?", options:["10 metros","11 metros","12 metros","9 metros"], correct_index:1 },
+  { category:"Momentos", difficulty:"dificil", question:"¿Qué jugador marcó el gol más rápido en la historia de la Premier League?", options:["Shane Long","Ledley King","Alan Shearer","Christian Eriksen"], correct_index:0 },
+
+  // ── QUIZ 23 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"facil", question:"¿En qué país nació Luka Modrić?", options:["Serbia","Bosnia","Croacia","Eslovenia"], correct_index:2 },
+  { category:"Historia", difficulty:"media", question:"¿En qué año se fundó la FIFA?", options:["1900","1904","1908","1912"], correct_index:1 },
+  { category:"Selecciones", difficulty:"facil", question:"¿Cuál es el apodo de la selección de Portugal?", options:["La Furia","A Seleção","Os Navegadores","La Canarinha"], correct_index:1 },
+  { category:"Cultura", difficulty:"dificil", question:"¿Qué regla del fútbol establece que el portero no puede tomar el balón con la mano si un compañero se lo pasa con el pie?", options:["Regla 12","Regla 11","Regla 1","Regla 4"], correct_index:0 },
+  { category:"Momentos", difficulty:"media", question:"¿Qué selección ganó la Nations League inaugural en 2019?", options:["Francia","Portugal","Países Bajos","España"], correct_index:1 },
+
+  // ── QUIZ 24 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"media", question:"¿Qué jugador ganó el Balón de Oro 2023?", options:["Mbappé","Haaland","Bellingham","Messi"], correct_index:3 },
+  { category:"Historia", difficulty:"facil", question:"¿Qué selección ganó el Mundial 1978?", options:["Brasil","Uruguay","Argentina","Alemania"], correct_index:2 },
+  { category:"Selecciones", difficulty:"media", question:"¿Cuántas veces ha ganado España la Eurocopa?", options:["2","3","4","5"], correct_index:2 },
+  { category:"Cultura", difficulty:"facil", question:"¿Cuántas sustituciones permite la FIFA por partido en competiciones oficiales?", options:["3","4","5","6"], correct_index:2 },
+  { category:"Momentos", difficulty:"dificil", question:"¿Quién fue el primer entrenador en ganar el Mundial como jugador y como técnico?", options:["Beckenbauer","Deschamps","Zagallo","Ramsey"], correct_index:2 },
+
+  // ── QUIZ 25 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"facil", question:"¿De qué país es Vinicius Jr.?", options:["Argentina","Colombia","Brasil","Uruguay"], correct_index:2 },
+  { category:"Historia", difficulty:"media", question:"¿Qué selección organizó y ganó el Mundial 1998?", options:["Alemania","España","Italia","Francia"], correct_index:3 },
+  { category:"Selecciones", difficulty:"facil", question:"¿Cuál es el apodo de la selección de México?", options:["El Tri","La Verde","Los Aztecas","La Selección"], correct_index:0 },
+  { category:"Cultura", difficulty:"media", question:"¿Qué significa un 'doblete' en fútbol de clubes?", options:["Ganar liga y copa en la misma temporada","Marcar dos goles en un partido","Ganar dos títulos consecutivos","Ganar liga y Champions"], correct_index:0 },
+  { category:"Momentos", difficulty:"media", question:"¿Qué jugador anotó el penalti que dio a Italia la Eurocopa 2020?", options:["Bonucci","Immobile","Insigne","Bernardeschi"], correct_index:3 },
+
+  // ── QUIZ 26 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"media", question:"¿Quién ganó el Balón de Oro 2022?", options:["Messi","Benzema","Mbappé","Modric"], correct_index:1 },
+  { category:"Historia", difficulty:"facil", question:"¿Qué selección ganó el Mundial 1954?", options:["Hungría","Brasil","Alemania Occidental","Uruguay"], correct_index:2 },
+  { category:"Selecciones", difficulty:"media", question:"¿Qué selección asiática llegó a semifinales del Mundial 2002?", options:["Japón","China","Corea del Sur","Arabia Saudita"], correct_index:2 },
+  { category:"Cultura", difficulty:"facil", question:"¿Cuántos puntos vale un empate en la fase de grupos de un Mundial?", options:["0","1","2","3"], correct_index:1 },
+  { category:"Momentos", difficulty:"dificil", question:"¿Qué jugador marcó en 5 Mundiales distintos?", options:["Ronaldo","Messi","Pelé","Cristiano Ronaldo"], correct_index:3 },
+
+  // ── QUIZ 27 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"facil", question:"¿En qué club juega actualmente Pedri?", options:["Real Madrid","Atlético Madrid","Barcelona","Sevilla"], correct_index:2 },
+  { category:"Historia", difficulty:"media", question:"¿En qué año se introdujo la tarjeta roja y amarilla en el fútbol?", options:["1966","1970","1974","1978"], correct_index:1 },
+  { category:"Selecciones", difficulty:"media", question:"¿Qué selección tiene el récord de más goles marcados en una sola edición del Mundial?", options:["Brasil 1950","Hungría 1954","Francia 1998","Alemania 2014"], correct_index:1 },
+  { category:"Cultura", difficulty:"media", question:"¿Cuánto mide la altura de un arco de fútbol?", options:["2.24 metros","2.44 metros","2.54 metros","2.64 metros"], correct_index:1 },
+  { category:"Momentos", difficulty:"media", question:"¿En qué año Maradona marcó el 'Gol del Siglo' contra Inglaterra?", options:["1982","1986","1990","1994"], correct_index:1 },
+
+  // ── QUIZ 28 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"media", question:"¿Qué jugador tiene más títulos de Champions League como jugador?", options:["Messi","Ronaldo","Marcelo","Modric"], correct_index:2 },
+  { category:"Historia", difficulty:"facil", question:"¿Cuántos mundiales se celebraron en América del Sur?", options:["3","4","5","6"], correct_index:1 },
+  { category:"Selecciones", difficulty:"facil", question:"¿Cuál es el apodo de la selección de Uruguay?", options:["La Albiceleste","La Celeste","La Canarinha","La Verde"], correct_index:1 },
+  { category:"Cultura", difficulty:"dificil", question:"¿Cuántas reglas oficiales tiene el fútbol según la IFAB?", options:["15","17","19","21"], correct_index:1 },
+  { category:"Momentos", difficulty:"media", question:"¿Qué selección ganó la Eurocopa 2012?", options:["Alemania","Italia","España","Francia"], correct_index:2 },
+
+  // ── QUIZ 29 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"facil", question:"¿Qué jugador es conocido como 'El Matador'?", options:["Cavani","Suárez","Forlán","Recoba"], correct_index:1 },
+  { category:"Historia", difficulty:"media", question:"¿Qué selección ganó el Mundial 1962?", options:["Argentina","Uruguay","Brasil","Chile"], correct_index:2 },
+  { category:"Selecciones", difficulty:"media", question:"¿Qué selección de Concacaf ha llegado más lejos en un Mundial?", options:["México","Costa Rica","Honduras","Estados Unidos"], correct_index:1 },
+  { category:"Cultura", difficulty:"facil", question:"¿Cómo se llama la competencia de clubes más importante de Europa?", options:["Europa League","Copa del Rey","Champions League","Supercopa de Europa"], correct_index:2 },
+  { category:"Momentos", difficulty:"dificil", question:"¿Cuántos goles marcó Gabriel Batistuta en Mundiales?", options:["8","9","10","11"], correct_index:2 },
+
+  // ── QUIZ 30 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"media", question:"¿Quién ganó el Balón de Oro 2024?", options:["Messi","Vinicius Jr","Bellingham","Rodri"], correct_index:3 },
+  { category:"Historia", difficulty:"facil", question:"¿Qué selección ganó el Mundial 1982?", options:["Brasil","Argentina","Alemania","Italia"], correct_index:3 },
+  { category:"Selecciones", difficulty:"media", question:"¿Cuántas veces ha ganado Francia la Eurocopa?", options:["1","2","3","4"], correct_index:1 },
+  { category:"Cultura", difficulty:"media", question:"¿Qué es un 'penalti a lo Panenka'?", options:["Un penalti muy fuerte al centro","Un penalti suave al centro con globito","Un penalti al ángulo","Un penalti con pierna cambiada"], correct_index:1 },
+  { category:"Momentos", difficulty:"media", question:"¿Qué selección ganó la Copa Confederaciones 2017?", options:["Brasil","Alemania","Chile","Portugal"], correct_index:1 },
+
+  // ── QUIZ 31 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"facil", question:"¿En qué club debutó Neymar profesionalmente?", options:["Flamengo","Fluminense","Santos","Corinthians"], correct_index:2 },
+  { category:"Historia", difficulty:"media", question:"¿Qué selección ganó el Mundial 1958?", options:["Argentina","Suecia","Brasil","Francia"], correct_index:2 },
+  { category:"Selecciones", difficulty:"facil", question:"¿Cuántas veces ha ganado Brasil la Copa América?", options:["7","8","9","10"], correct_index:2 },
+  { category:"Cultura", difficulty:"media", question:"¿Qué jugador inventó la 'rabona'?", options:["Maradona","Ricardo Infante","Pelé","Ronaldinho"], correct_index:1 },
+  { category:"Momentos", difficulty:"dificil", question:"¿Cuál fue el primer club en ganar tres Champions League consecutivas?", options:["Barcelona","Real Madrid","Ajax","Bayern Munich"], correct_index:2 },
+
+  // ── QUIZ 32 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"media", question:"¿Cuántos Balones de Oro ganó Ronaldo Nazário?", options:["1","2","3","4"], correct_index:1 },
+  { category:"Historia", difficulty:"facil", question:"¿Qué selección ganó el Mundial 1974?", options:["Países Bajos","Brasil","Alemania Occidental","Argentina"], correct_index:2 },
+  { category:"Selecciones", difficulty:"media", question:"¿Qué selección tiene el récord de más partidos invictos consecutivos?", options:["Brasil","España","Italia","Argentina"], correct_index:3 },
+  { category:"Cultura", difficulty:"facil", question:"¿Cuánto mide el círculo central de un campo de fútbol?", options:["8 metros de radio","9.15 metros de radio","10 metros de radio","11 metros de radio"], correct_index:1 },
+  { category:"Momentos", difficulty:"media", question:"¿Qué selección ganó la Eurocopa 2008?", options:["Alemania","Francia","Italia","España"], correct_index:3 },
+
+  // ── QUIZ 33 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"facil", question:"¿De qué país es Robert Lewandowski?", options:["República Checa","Alemania","Polonia","Hungría"], correct_index:2 },
+  { category:"Historia", difficulty:"media", question:"¿Qué selección ganó el Mundial 1970?", options:["Italia","Brasil","Uruguay","Alemania"], correct_index:1 },
+  { category:"Selecciones", difficulty:"media", question:"¿Qué selección ganó la Copa Asia 2023?", options:["Japón","Corea del Sur","Arabia Saudita","Qatar"], correct_index:3 },
+  { category:"Cultura", difficulty:"media", question:"¿Cuánto tiempo tiene un portero para sacar con la mano sin que sea falta?", options:["4 segundos","6 segundos","8 segundos","10 segundos"], correct_index:1 },
+  { category:"Momentos", difficulty:"dificil", question:"¿Qué club ganó la Champions League 2021-22?", options:["Liverpool","Manchester City","Real Madrid","Chelsea"], correct_index:2 },
+
+  // ── QUIZ 34 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"media", question:"¿Con qué selección debutó en un Mundial Antoine Griezmann?", options:["Francia 2010","Francia 2014","Francia 2018","Francia 2022"], correct_index:1 },
+  { category:"Historia", difficulty:"facil", question:"¿Qué selección ganó el Mundial 1950?", options:["Brasil","Uruguay","Argentina","Chile"], correct_index:1 },
+  { category:"Selecciones", difficulty:"facil", question:"¿De qué color es la camiseta titular de Países Bajos?", options:["Azul","Verde","Naranja","Roja"], correct_index:2 },
+  { category:"Cultura", difficulty:"media", question:"¿Qué significa 'pressing' en fútbol?", options:["Jugar muy defensivo","Presionar al rival para recuperar el balón rápido","Jugar directo","Defender en bloque bajo"], correct_index:1 },
+  { category:"Momentos", difficulty:"media", question:"¿Qué club ganó la Champions League 2022-23?", options:["Real Madrid","Manchester City","Bayern Munich","Inter"], correct_index:1 },
+
+  // ── QUIZ 35 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"facil", question:"¿Quién es el capitán histórico más recordado de la selección de Italia?", options:["Totti","Del Piero","Buffon","Maldini"], correct_index:3 },
+  { category:"Historia", difficulty:"media", question:"¿Qué selección ganó la Copa del Mundo 1934?", options:["Alemania","Hungría","Italia","Austria"], correct_index:2 },
+  { category:"Selecciones", difficulty:"media", question:"¿Qué selección africana clasificó por primera vez a un Mundial en 1990?", options:["Camerún","Nigeria","Costa de Marfil","Senegal"], correct_index:0 },
+  { category:"Cultura", difficulty:"dificil", question:"¿Cuál es el campo de fútbol con mayor capacidad del mundo?", options:["Camp Nou","Wembley","Estadio de Rungnado","MetLife Stadium"], correct_index:2 },
+  { category:"Momentos", difficulty:"media", question:"¿Qué club ganó la Champions League 2023-24?", options:["Bayern Munich","Barcelona","PSG","Real Madrid"], correct_index:3 },
+
+  // ── QUIZ 36 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"media", question:"¿Qué jugador ganó más títulos de Copa del Mundo como entrenador y jugador?", options:["Deschamps","Zagallo","Beckenbauer","Ramsey"], correct_index:1 },
+  { category:"Historia", difficulty:"facil", question:"¿Cuántos Mundiales ha ganado Uruguay?", options:["1","2","3","4"], correct_index:1 },
+  { category:"Selecciones", difficulty:"media", question:"¿Qué selección ganó la Gold Cup 2023?", options:["México","Costa Rica","Panamá","Estados Unidos"], correct_index:3 },
+  { category:"Cultura", difficulty:"facil", question:"¿Cómo se llama el área chica en fútbol?", options:["Área de penal","Área de portero","Área pequeña","Área de saque de meta"], correct_index:3 },
+  { category:"Momentos", difficulty:"dificil", question:"¿Cuántos títulos de Champions League ha ganado el Real Madrid en total?", options:["13","14","15","16"], correct_index:2 },
+
+  // ── QUIZ 37 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"facil", question:"¿Qué posición juega Alisson Becker?", options:["Defensa","Mediocampista","Portero","Delantero"], correct_index:2 },
+  { category:"Historia", difficulty:"media", question:"¿En qué Mundial debutó Colombia por primera vez?", options:["1958","1962","1966","1970"], correct_index:1 },
+  { category:"Selecciones", difficulty:"media", question:"¿Qué selección ganó la Copa África 2023?", options:["Senegal","Marruecos","Nigeria","Costa de Marfil"], correct_index:3 },
+  { category:"Cultura", difficulty:"media", question:"¿Qué significa 'gegenpressing' en fútbol?", options:["Defensa en bloque bajo","Contraataque veloz","Presión inmediata tras perder el balón","Posesión lenta"], correct_index:2 },
+  { category:"Momentos", difficulty:"media", question:"¿Qué club ganó la Premier League 2023-24?", options:["Manchester City","Arsenal","Liverpool","Chelsea"], correct_index:0 },
+
+  // ── QUIZ 38 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"media", question:"¿Qué jugador tiene más apariciones en la historia de la selección de España?", options:["Xavi","Iniesta","Sergio Ramos","Casillas"], correct_index:2 },
+  { category:"Historia", difficulty:"facil", question:"¿Qué selección ganó el Mundial 1938?", options:["Francia","Italia","Alemania","Hungría"], correct_index:1 },
+  { category:"Selecciones", difficulty:"media", question:"¿Cuál es el apodo de la selección de Países Bajos?", options:["Los Tulipanes","La Naranja Mecánica","Los Vikingos","La Furia Naranja"], correct_index:1 },
+  { category:"Cultura", difficulty:"dificil", question:"¿Qué país fue el primero en transmitir un partido de fútbol por televisión?", options:["Reino Unido","Alemania","Estados Unidos","Francia"], correct_index:0 },
+  { category:"Momentos", difficulty:"media", question:"¿Qué selección ganó la Eurocopa 2024?", options:["Alemania","Francia","Inglaterra","España"], correct_index:3 },
+
+  // ── QUIZ 39 ──────────────────────────────────────────────────────────────────
+  { category:"Jugadores", difficulty:"facil", question:"¿En qué club juega Rodri actualmente?", options:["Real Madrid","Barcelona","Manchester City","Bayern Munich"], correct_index:2 },
+  { category:"Historia", difficulty:"media", question:"¿Qué selección ganó el primer Mundial jugado en Europa en 1934?", options:["Alemania","Hungría","Italia","Austria"], correct_index:2 },
+  { category:"Selecciones", difficulty:"media", question:"¿Qué selección ganó el Mundial Femenino 2023?", options:["Estados Unidos","Alemania","España","Brasil"], correct_index:2 },
+  { category:"Cultura", difficulty:"media", question:"¿Qué jugador inventó la 'bicicleta' o chilena?", options:["Pelé","Maradona","Ramón Unzaga","Ronaldinho"], correct_index:2 },
+  { category:"Momentos", difficulty:"dificil", question:"¿Qué jugador marcó el gol que le dio a España el Mundial 2010 en la prórroga?", options:["Villa","Torres","Xavi","Iniesta"], correct_index:3 },
