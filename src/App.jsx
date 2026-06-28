@@ -94,7 +94,7 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
                     <button style={{...btn("outline-gray"),fontSize:12,padding:"6px 10px"}} onClick={()=>handleCalcBadges(j)}>🏅 Calcular badges J{j}</button>
                   )}
                 </div>
-              </div>
+          </div>
             );
           })}
         </div>
@@ -455,10 +455,10 @@ const ParticipantScreen = ({activeParticipant,openJornadas,results,currentPreds,
           {(()=>{
             const filtered=knockoutMatches.filter(m=>m.round===knockoutRound&&m.is_open&&m.home!=="A definir"&&m.away!=="A definir");
             const byDateK=filtered.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
-            return Object.entries(byDateK).map(([date,dayMatches])=>(
+            return Object.entries(byDateK).sort(([a],[b])=>a.localeCompare(b)).map(([date,dayMatches])=>(
               <div key={date}>
                 <DateHeader dateStr={date}/>
-                {dayMatches.map(m=>(
+                {[...dayMatches].sort((a,b)=>a.time.localeCompare(b.time)).map(m=>(
                   <KnockoutMatchRow
                     key={m.id}
                     m={m}
@@ -694,10 +694,10 @@ const PronosticosScreen = ({participants,results,knockoutMatches,knockoutPredict
           {(()=>{
             const filtered=knockoutMatches.filter(m=>m.round===roundFilter);
             const byDateK=filtered.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
-            return Object.entries(byDateK).map(([date,dayMatches])=>(
+            return Object.entries(byDateK).sort(([a],[b])=>a.localeCompare(b)).map(([date,dayMatches])=>(
               <div key={date}>
                 <DateHeader dateStr={date}/>
-                {dayMatches.map(m=>{
+                {[...dayMatches].sort((a,b)=>a.time.localeCompare(b.time)).map(m=>{
                   const hasResult=m.home_goals!=null&&m.away_goals!=null;
                   return (
                     <div key={m.id} style={{...card,padding:"12px 16px",marginBottom:8}}>
