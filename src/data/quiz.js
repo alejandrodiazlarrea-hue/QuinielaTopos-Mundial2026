@@ -383,4 +383,6 @@ export const QUIZ_QUESTIONS = [
   { category:"Selecciones", difficulty:"dificil", question:"¿Qué selección tiene el récord de más goles en una sola edición de la Copa América?", options:["Brasil 1997","Argentina 1947","Uruguay 1942","Perú 1975"], correct_index:1 },
   { category:"Momentos", difficulty:"dificil", question:"¿Cuántas veces ha llegado un equipo anfitrión a la final del Mundial?", options:["6","7","8","9"], correct_index:2 },
   { category:"Cultura", difficulty:"dificil", question:"¿En qué año se creó la CONMEBOL?", options:["1910","1916","1920","1924"], correct_index:1 }
+  { category:"Jugadores", difficulty:"dificil", question:"¿Cuántos goles marcó Gerd Müller en Mundiales?", options:["12","13","14","15"], correct_index:2 },
+  { category:"Historia", difficulty:"dificil", question:"¿Cuál fue el primer Mundial en usar el formato de eliminación directa desde la primera ronda?", options:["Uruguay 1930","Italia 1934","Francia 1938","Brasil 1950"], correct_index:1 }
 ];  
