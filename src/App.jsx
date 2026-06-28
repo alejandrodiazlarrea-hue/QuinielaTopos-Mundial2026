@@ -146,7 +146,7 @@ const AdminScreen = ({participants,results,openJornadas,savedMsg,handleResultCha
       <div style={card}>
         <div style={sec}>🧠 Control de Quizzes</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
-          {Array.from({length:17},(_,i)=>{
+          {Array.from({length:39},(_,i)=>{
             const label=`quiz-${i+1}`;
             const isOpen=quizOpenDates&&quizOpenDates.includes(label);
             return (
