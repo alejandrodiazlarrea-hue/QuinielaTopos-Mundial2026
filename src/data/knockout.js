@@ -35,16 +35,14 @@ export const calcKnockoutScore = (pred, match) => {
   // Marcador exacto bonus
   if (predHome === realHome && predAway === realAway) pts++;
 
-  // Clasificado
-  if (realResult !== "D") {
-    // Sin empate — clasifica quien ganó en 90min
-    const realWinner = realResult === "H" ? match.home : match.away;
-    const predWinner = predResult === "H" ? match.home : predResult === "A" ? match.away : null;
-    if (predWinner && predWinner === realWinner) pts++;
-  } else {
-    // Empate en 90min — usar qualifier
-    if (match.qualifier && pred.qualifier && pred.qualifier === match.qualifier) pts++;
-  }
+  // Clasificado — quien realmente avanzó
+  const realWinner = realResult === "H" ? match.home : realResult === "A" ? match.away : match.qualifier;
+
+  // Si pronóstico no fue empate: clasificado es quien ganó en el pronóstico
+  // Si pronóstico fue empate: usar qualifier del pronóstico
+  const predWinner = predResult === "H" ? match.home : predResult === "A" ? match.away : pred.qualifier;
+
+  if (realWinner && predWinner && realWinner === predWinner) pts++;
 
   return pts;
 };
